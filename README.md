@@ -26,17 +26,17 @@ docker run -d -p 9191:9191 opendating/adult-image-detector
 (I intentionally changed links, do not want to violate github policy)
 ~~~
 $ nudecrawler sasha-grey
-INTERESTING https://telegra.ph/sasha-grey-02-02-3
+INTERESTING https://telegra.ph/sasha-grey-XXXXXXXX
   Nude: 0 non-nude: 0
   Total video: 1
 
-INTERESTING https://telegra.ph/sasha-grey-01-31
+INTERESTING https://telegra.ph/sasha-grey-XXXXX
   Nude: 9 non-nude: 6
 
-INTERESTING https://telegra.ph/sasha-grey-01-22
+INTERESTING https://telegra.ph/sasha-grey-XXXXX
   Nude: 9 non-nude: 6
 
-INTERESTING https://telegra.ph/sasha-grey-01-14
+INTERESTING https://telegra.ph/sasha-grey-XXXXX
   Nude: 6 non-nude: 3
 ~~~
 
