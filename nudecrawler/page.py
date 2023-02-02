@@ -62,15 +62,16 @@ class Page:
                 self.videos.append(src)
 
     def is_nude(self, url):
-        ri = RemoteImage(url)
         try:
+            ri = RemoteImage(url)
             if ri.detect_nudity():
                 self.nude_images += 1
             else:
                 self.nonnude_images += 1
-        except ValueError:
-            # icon, small images
-            pass
+        except Exception as e:
+            if get_verbose():
+                print(f"Exception with page {self.url}, image {url}")
+                print(e)
 
 
     def check_images(self):
