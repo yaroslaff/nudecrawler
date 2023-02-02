@@ -107,7 +107,7 @@ class Page:
 
 
     def print(self):
-        print("PAGE", self.url, self.status())
+        print(self.status(), self.url)
         print("  Nude:",self.nude_images, "non-nude:", self.nonnude_images)
         if self.total_video:
             print("  Total video:", self.total_video)
