@@ -1,9 +1,14 @@
-# nudecrawler
+# nude crawler
 
-Nudecrawlers crawls all pages on telegra.ph for today and N past days for specific words, checks number of nude, non-nude images, videos (not analysed) and reports pages which looks interesting (e.g. has more then 10 nude images, or has one video)
+Nude crawler crawls all pages on telegra.ph for today and N past days for specific words, checks number of nude, non-nude images, videos (not analysed) and reports pages which looks interesting (e.g. has more then 10 nude images, or has one video)
 
 ## Install
 
+```
+pip3 install nudecrawler
+```
+
+alternatively, install right from git repo:
 ```
 pip3 install git+https://github.com/yaroslaff/nudecrawler
 ```

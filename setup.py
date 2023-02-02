@@ -27,7 +27,7 @@ setup(
     long_description=read('README.md'),
     long_description_content_type='text/markdown',
     author_email='yaroslaff@gmail.com',
-    description='Crawl telegra.ph for nude pictures',
+    description='Crawl telegra.ph for nude pictures and videos',
     python_requires='>=3.6',
     classifiers=[
         'Development Status :: 3 - Alpha',
