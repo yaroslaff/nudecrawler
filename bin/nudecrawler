@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+
+import argparse
+import datetime
+import nudecrawler 
+from nudecrawler import Page
+
+nude = 1
+video = 1
+verbose = False
+
+def get_args():
+    parser = argparse.ArgumentParser(description='Telegra.ph Spider')
+    parser.add_argument('words', nargs='*')
+    parser.add_argument('-d', '--days', type=int, default=30)
+    parser.add_argument('--nude', type=int, default=1, help='Interesting if N nude images')
+    parser.add_argument('--video', type=int, default=1, help='Interesting if N video')
+    parser.add_argument('-u', '--url', help='process one url')
+    parser.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
+
+    return parser.parse_args()
+
+def analyse(url):
+
+    p = Page(url, neednnudes=nude, neednvideo=video)
+    if p.error:
+        return p
+    p.check_all()
+    if p.status().startswith('INTERESTING'):
+        p.print()
+    return p
+
+def check_word(word, day):
+    url=f'https://telegra.ph/{word}-{day.month:02}-{day.day:02}'
+    # r = requests.get(url)  
+    p = analyse(url)
+    if p.error:
+        return
+    c=2
+    nfails=0
+
+    while nfails<10:
+        url=f'https://telegra.ph/{word}-{day.month:02}-{day.day:02}-{c}'
+        p = analyse(url)
+        if p.error:
+            nfails += 1
+        else:
+            nfails=0
+        c+=1
+
+
+
+def main():
+    global nude, video, verbose
+
+    args = get_args()
+
+    nude = args.nude
+    video = args.video
+    verbose = args.verbose
+
+    nudecrawler.verbose.verbose = verbose
+
+    if args.url:
+        p = analyse(args.url)
+        if p.error:
+            print("ERROR")
+        print(p.status())
+        return
+
+    if not args.words:
+        print("Need either -u URL or words like 'nude'")
+
+    day = datetime.datetime.now()
+
+    days_tried = 0
+    while days_tried < args.days:
+        check_word(args.words[0], day)
+        days_tried += 1
+        day = day - datetime.timedelta(days=1)
+
+if __name__ == '__main__':
+    main()
