@@ -76,9 +76,7 @@ def analyse(url):
     return p
 
 def check_word(word, day, fails):
-
     trans_word = transliterate.translit(word, 'tgru', reversed=True)
-
     url=f'https://telegra.ph/{trans_word}-{day.month:02}-{day.day:02}'
     # r = requests.get(url)  
     p = analyse(url)
