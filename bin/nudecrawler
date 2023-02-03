@@ -5,9 +5,51 @@ import datetime
 import nudecrawler 
 from nudecrawler import Page
 
+import transliterate.discover 
+from transliterate.base import TranslitLanguagePack, registry
+
+transliterate.discover.autodiscover()
+
+class TgRuLanguagePack(TranslitLanguagePack):
+    language_code = "tgru"
+    language_name = "tgru"
+
+    mapping = (
+        u"abvgdezijklmnoprstufhcC'y'ABVGDEZIJKLMNOPRSTUFH'Y'",
+        u"абвгдезийклмнопрстуфхцЦъыьАБВГДЕЗИЙКЛМНОПРСТУФХЪЫЬ",
+    )
+
+    reversed_specific_mapping = (
+        u"эЭъьЪЬ",
+        u"eE''''"
+    )
+
+    pre_processor_mapping = {
+        u"zh": u"ж",
+        "yo": 'ё',
+        u"ts": u"ц",
+        u"ch": u"ч",
+        u"sh": u"ш",
+        u"sch": u"щ",
+        u"yu": u"ю",
+        u"ya": u"я",
+        "Yo": 'Ё',
+        u"Zh": u"Ж",
+        u"Ts": u"Ц",
+        u"Ch": u"Ч",
+        u"Sh": u"Ш",
+        u"Sch": u"Щ",
+        u"Yu": u"Ю",
+        u"Ja": u"Я"
+    }
+
+registry.register(TgRuLanguagePack)
+
+
 nude = 1
 video = 1
 verbose = False
+all_found = True
 
 def get_args():
     parser = argparse.ArgumentParser(description='Telegra.ph Spider')
@@ -16,13 +58,16 @@ def get_args():
     parser.add_argument('--nude', type=int, default=1, help='Interesting if N nude images')
     parser.add_argument('--video', type=int, default=1, help='Interesting if N video')
     parser.add_argument('-u', '--url', help='process one url')
+    parser.add_argument('-w', '--wordlist', help='wordlist file')
+    parser.add_argument('-a', '--all', default=False, action='store_true', help='do not detect, print all found pages')
+    parser.add_argument('-f', '--fails', type=int, default=0, help='stop searching next pages with same words after N failures')
     parser.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
 
     return parser.parse_args()
 
 def analyse(url):
 
-    p = Page(url, neednnudes=nude, neednvideo=video)
+    p = Page(url, neednnudes=nude, neednvideo=video, all_found=all_found)
     if p.error:
         return p
     p.check_all()
@@ -30,8 +75,11 @@ def analyse(url):
         p.print()
     return p
 
-def check_word(word, day):
-    url=f'https://telegra.ph/{word}-{day.month:02}-{day.day:02}'
+def check_word(word, day, fails):
+
+    trans_word = transliterate.translit(word, 'tgru', reversed=True)
+
+    url=f'https://telegra.ph/{trans_word}-{day.month:02}-{day.day:02}'
     # r = requests.get(url)  
     p = analyse(url)
     if p.error:
@@ -39,8 +87,8 @@ def check_word(word, day):
     c=2
     nfails=0
 
-    while nfails<10:
-        url=f'https://telegra.ph/{word}-{day.month:02}-{day.day:02}-{c}'
+    while nfails<fails:
+        url=f'https://telegra.ph/{trans_word}-{day.month:02}-{day.day:02}-{c}'
         p = analyse(url)
         if p.error:
             nfails += 1
@@ -51,13 +99,15 @@ def check_word(word, day):
 
 
 def main():
-    global nude, video, verbose
+    global nude, video, verbose, all_found
 
     args = get_args()
 
     nude = args.nude
     video = args.video
     verbose = args.verbose
+    all_found = args.all
+
 
     nudecrawler.verbose.verbose = verbose
 
@@ -68,16 +118,23 @@ def main():
         print(p.status())
         return
 
-    if not args.words:
-        print("Need either -u URL or words like 'nude'")
+    if args.wordlist:
+        with open(args.wordlist) as fh:
+            words = [line.rstrip() for line in fh]
+    
+    if args.words:
+        words = args.words
+    
+    if not words:
+        print("Need either -u URL or words like 'nude' or -w wordlist.txt")
 
-    day = datetime.datetime.now()
-
-    days_tried = 0
-    while days_tried < args.days:
-        check_word(args.words[0], day)
-        days_tried += 1
-        day = day - datetime.timedelta(days=1)
+    for w in words:
+        day = datetime.datetime.now()
+        days_tried = 0
+        while days_tried < args.days:
+            check_word(w, day, args.fails)
+            days_tried += 1
+            day = day - datetime.timedelta(days=1)
 
 if __name__ == '__main__':
     main()

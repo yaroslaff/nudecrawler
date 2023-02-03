@@ -19,7 +19,7 @@ setup(
     packages=['nudecrawler'],
     scripts=['bin/nudecrawler'],
 
-    install_requires=['bs4', 'requests', 'pillow', 'tqdm'],
+    install_requires=['bs4', 'requests', 'pillow', 'tqdm', 'transliterate'],
 
     url='https://github.com/yaroslaff/nudecrawler',
     license='MIT',
