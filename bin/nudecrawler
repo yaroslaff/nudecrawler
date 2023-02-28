@@ -58,10 +58,14 @@ def get_args():
     parser.add_argument('--nude', type=int, default=1, help='Interesting if N nude images')
     parser.add_argument('--video', type=int, default=1, help='Interesting if N video')
     parser.add_argument('-u', '--url', help='process one url')
-    parser.add_argument('-w', '--wordlist', help='wordlist file')
     parser.add_argument('-a', '--all', default=False, action='store_true', help='do not detect, print all found pages')
     parser.add_argument('-f', '--fails', type=int, default=0, help='stop searching next pages with same words after N failures')
     parser.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
+
+    g = parser.add_argument_group('Wordlist-related options')
+    g.add_argument('-w', '--wordlist', help='wordlist file')
+    g.add_argument('--resume', metavar='WORD', help='skip all words before WORD in list, resume starting from it')
+
 
     return parser.parse_args()
 
@@ -107,7 +111,8 @@ def main():
     video = args.video
     verbose = args.verbose
     all_found = args.all
-
+    matched_resume = False
+    skipped_words = 0
 
     nudecrawler.verbose.verbose = verbose
 
@@ -128,7 +133,16 @@ def main():
     if not words:
         print("Need either -u URL or words like 'nude' or -w wordlist.txt")
 
-    for w in words:
+    for w in words:        
+        if args.resume and not matched_resume:
+            if w == args.resume:
+                matched_resume = True
+                print(f"Resume from word {w!r}, skipped: {skipped_words} words")
+            else:
+                skipped_words += 1
+                continue
+
+
         day = datetime.datetime.now()
         days_tried = 0
         while days_tried < args.days:

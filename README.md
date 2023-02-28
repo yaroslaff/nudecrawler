@@ -14,12 +14,15 @@ pip3 install git+https://github.com/yaroslaff/nudecrawler
 ```
 
 ## start adult-image-detector 
-
-We use [adult-image-detector](https://github.com/open-dating/adult-image-detector):
+If you want nudity detection, we use optional [adult-image-detector](https://github.com/open-dating/adult-image-detector):
 
 ~~~
 docker run -d -p 9191:9191 opendating/adult-image-detector
 ~~~
+
+Or just add `-a` option if you do not want to filter by number of nude images.
+
+
 
 ## Launch Nude Crawler!
 

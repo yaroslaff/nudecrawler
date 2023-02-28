@@ -3,3 +3,4 @@ dist/
 nudecrawler.egg-info/
 __pycache__/
 *.pyc
+.local/
