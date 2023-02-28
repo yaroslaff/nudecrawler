@@ -1,9 +1,13 @@
-#!/usr/bin/env python -u
+#!/usr/bin/env python
+
+# asdf3
 
 import argparse
 import datetime
+import os
+import sys
 import nudecrawler 
-from nudecrawler import Page
+from nudecrawler import Page, Unbuffered
 
 import transliterate.discover 
 from transliterate.base import TranslitLanguagePack, registry
@@ -60,7 +64,11 @@ def get_args():
     parser.add_argument('-u', '--url', help='process one url')
     parser.add_argument('-a', '--all', default=False, action='store_true', help='do not detect, print all found pages')
     parser.add_argument('-f', '--fails', type=int, default=0, help='stop searching next pages with same words after N failures')
-    parser.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
+
+    g = parser.add_argument_group('Output options')
+    g.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
+    g.add_argument('--unbuffered', '-b', default=False, action='store_true', help='Use unbuffered stdout')
+
 
     g = parser.add_argument_group('Wordlist-related options')
     g.add_argument('-w', '--wordlist', help='wordlist file')
@@ -68,6 +76,9 @@ def get_args():
 
 
     return parser.parse_args()
+
+
+
 
 def analyse(url):
 
@@ -105,7 +116,9 @@ def check_word(word, day, fails):
 def main():
     global nude, video, verbose, all_found
 
+    words = None
     args = get_args()
+
 
     nude = args.nude
     video = args.video
@@ -115,6 +128,9 @@ def main():
     skipped_words = 0
 
     nudecrawler.verbose.verbose = verbose
+
+    if args.unbuffered:
+        sys.stdout = Unbuffered(sys.stdout)
 
     if args.url:
         p = analyse(args.url)
@@ -132,6 +148,7 @@ def main():
     
     if not words:
         print("Need either -u URL or words like 'nude' or -w wordlist.txt")
+        sys.exit(1)
 
     for w in words:        
         if args.resume and not matched_resume:
