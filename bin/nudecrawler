@@ -68,6 +68,7 @@ def get_args():
     g = parser.add_argument_group('Output options')
     g.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
     g.add_argument('--unbuffered', '-b', default=False, action='store_true', help='Use unbuffered stdout')
+    g.add_argument('--urls', default=False, action='store_true', help='Do not check, just generate and print URLs')
 
 
     g = parser.add_argument_group('Wordlist-related options')
@@ -90,11 +91,21 @@ def analyse(url):
         p.print()
     return p
 
-def check_word(word, day, fails):
+def check_word(word, day, fails, print_urls=False):
     word = word.replace(' ','-').translate({ord('ь'): '', ord('ъ'): ''})
 
-    trans_word = transliterate.translit(word, 'tgru', reversed=True)
-    url=f'https://telegra.ph/{trans_word}-{day.month:02}-{day.day:02}'
+    if word.startswith("https://"):
+        baseurl = word
+    else:
+        trans_word = transliterate.translit(word, 'tgru', reversed=True)
+        baseurl=f'https://telegra.ph/{trans_word}'
+
+    url=f'{baseurl}-{day.month:02}-{day.day:02}'
+
+    if print_urls:
+        print(url)
+        return
+
     # r = requests.get(url)  
     p = analyse(url)
     if p.error:
@@ -163,7 +174,7 @@ def main():
         day = datetime.datetime.now()
         days_tried = 0
         while days_tried < args.days:
-            check_word(w, day, args.fails)
+            check_word(w, day, args.fails, print_urls = args.urls)
             days_tried += 1
             day = day - datetime.timedelta(days=1)
 

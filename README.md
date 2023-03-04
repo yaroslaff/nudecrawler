@@ -43,6 +43,46 @@ INTERESTING https://telegra.ph/sasha-grey-XXXXX
   Nude: 6 non-nude: 3
 ~~~
 
+## Working with wordlists
+In simplest case (not so big wordlist), just use `-w`, like:
+~~~shell
+# verbose, no-filtering (report all pages), use wordlist
+nudecrawler -v -a -w wordlist.txt
+~~~
+
+If you have very large wordlist, better to pre-check it with faster tool like [bulk-http-check](https://github.com/yaroslaff/bulk-http-check), it's much faster, doing simple check (we need only filter-out 200 vs 404 pages) millions of page per hour on smallest VPS server.
+
+Convert wordlist to urllist
+~~~shell
+# only generate URLs 
+nudecrawler -v -w wordlist.txt --urls > urls.txt
+~~~
+Verify it with [bulk-http-check](https://github.com/yaroslaff/bulk-http-check) and get output file with this format:
+~~~
+https://telegra.ph/abazhurah-02-26 OK 404
+https://telegra.ph/ab-03-01 OK 200
+https://telegra.ph/aaronov-02-22 OK 404
+https://telegra.ph/abazhurami-02-25 OK 404
+~~~
+
+Filter it, to leave only existing pages, and strip date from it:
+~~~
+grep "OK 200" .local/urls-status.log | cut -f 1 -d" "| sed 's/-[0-9]\+-[0-9]\+$//g' | sort | uniq > .local/urs.txt
+~~~
+
+List (urls.txt) will look like:
+~~~
+https://telegra.ph/
+https://telegra.ph/a
+https://telegra.ph/ab
+https://telegra.ph/aba
+https://telegra.ph/Abakan
+....
+~~~
+This list (~300Kb, 11k urls) created from 1.5M words russian wordlist. There are only words which had at least one page with this title for last 10 days. So it has words 'Анжелика' or 'Анфиса' (beautiful woman names), but has no words 'Абажурами' or 'Абажуродержателем').
+
+Now you can use this file as wordlist (nudecrawler will detect it's already base URL, and will only append date to URL). 
+
 ## Options
 ~~~
 usage: nudecrawler [-h] [-d DAYS] [--nude NUDE] [--video VIDEO] [-u URL] [-v] [words ...]
