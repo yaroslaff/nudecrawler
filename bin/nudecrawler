@@ -114,7 +114,7 @@ def check_word(word, day, fails, print_urls=False):
     nfails=0
 
     while nfails<fails:
-        url=f'https://telegra.ph/{trans_word}-{day.month:02}-{day.day:02}-{c}'
+        url=f'{baseurl}-{day.month:02}-{day.day:02}-{c}'
         p = analyse(url)
         if p.error:
             nfails += 1
