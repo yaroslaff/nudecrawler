@@ -14,6 +14,8 @@ from transliterate.base import TranslitLanguagePack, registry
 
 transliterate.discover.autodiscover()
 
+nudity_threshold = 0.5
+
 class TgRuLanguagePack(TranslitLanguagePack):
     language_code = "tgru"
     language_name = "tgru"
@@ -64,6 +66,7 @@ def get_args():
     parser.add_argument('-u', '--url', help='process one url')
     parser.add_argument('-a', '--all', default=False, action='store_true', help='do not detect, print all found pages')
     parser.add_argument('-f', '--fails', type=int, default=0, help='stop searching next pages with same words after N failures')
+    parser.add_argument('-t', '--threshold', type=float, default=0.2, help='nudity threshold (0..1), 0 will match almost everything')
 
     g = parser.add_argument_group('Output options')
     g.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
@@ -83,7 +86,7 @@ def get_args():
 
 def analyse(url):
 
-    p = Page(url, neednnudes=nude, neednvideo=video, all_found=all_found)
+    p = Page(url, neednnudes=nude, neednvideo=video, all_found=all_found, threshold=nudity_threshold)
     if p.error:
         return p
     p.check_all()
@@ -125,7 +128,7 @@ def check_word(word, day, fails, print_urls=False):
 
 
 def main():
-    global nude, video, verbose, all_found
+    global nude, video, verbose, all_found, nudity_threshold
 
     words = None
     args = get_args()
@@ -135,6 +138,7 @@ def main():
     video = args.video
     verbose = args.verbose
     all_found = args.all
+    nudity_threshold = args.threshold
     matched_resume = False
     skipped_words = 0
 
@@ -147,7 +151,7 @@ def main():
         p = analyse(args.url)
         if p.error:
             print("ERROR")
-        print(p.status())
+        # print(p.status())
         return
 
     if args.wordlist:

@@ -12,7 +12,7 @@ def trivial_iterator(xx):
 
 class Page:
 
-    def __init__(self, url, neednnudes=1, neednvideo=1, all_found=False):
+    def __init__(self, url, neednnudes=1, neednvideo=1, all_found=False, threshold=0.5):
         self.url = url
         self.error = False
         self.nban_links = 0
@@ -31,6 +31,7 @@ class Page:
 
         self.neednnudes = neednnudes
         self.neednvideo = neednvideo
+        self.threshold = threshold
 
         try:
             page = urllib.request.urlopen(self.url)
@@ -65,6 +66,7 @@ class Page:
     def is_nude(self, url):
         try:
             ri = RemoteImage(url)
+            ri.set_threshold(self.threshold)
             if ri.detect_nudity():
                 self.nude_images += 1
             else:
@@ -76,8 +78,6 @@ class Page:
 
 
     def check_images(self):
-
-
 
         def check_1img(img):
             src = img.get('src')
