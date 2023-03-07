@@ -4,7 +4,8 @@
 
 import argparse
 import datetime
-import os
+import json
+import time
 import sys
 import nudecrawler 
 from nudecrawler import Page, Unbuffered
@@ -15,6 +16,21 @@ from transliterate.base import TranslitLanguagePack, registry
 transliterate.discover.autodiscover()
 
 nudity_threshold = 0.5
+
+stats = {
+    'uptime': 0,
+    'urls': 0,
+    'words': 0,
+    'word': None,
+    'url': None,
+    'now': None
+}
+stats_file = None
+stats_period = 10
+
+stats_next_write = time.time() + stats_period
+
+started = time.time()
 
 class TgRuLanguagePack(TranslitLanguagePack):
     language_code = "tgru"
@@ -74,8 +90,9 @@ def get_args():
     g.add_argument('--urls', default=False, action='store_true', help='Do not check, just generate and print URLs')
 
 
-    g = parser.add_argument_group('Wordlist-related options')
-    g.add_argument('-w', '--wordlist', help='wordlist file')
+    g = parser.add_argument_group('list-related options')
+    g.add_argument('-w', '--wordlist', help='wordlist (urllist) file')
+    g.add_argument('--stats', default='/tmp/nudecrawler-stats.txt', help='periodical statistics file')
     g.add_argument('--resume', metavar='WORD', help='skip all words before WORD in list, resume starting from it')
 
 
@@ -87,12 +104,26 @@ def get_args():
 def analyse(url):
 
     p = Page(url, neednnudes=nude, neednvideo=video, all_found=all_found, threshold=nudity_threshold)
+    stats['urls'] += 1
+
     if p.error:
         return p
     p.check_all()
     if p.status().startswith('INTERESTING'):
         p.print()
     return p
+
+
+def save_stats():
+    global stats_next_write    
+    if time.time() > stats_next_write:
+        stats['now'] = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        stats['uptime'] = int(time.time() - started)
+        
+        with open(stats_file, "w") as fh:
+            json.dump(stats, fh, indent=4)
+            stats_next_write = time.time() + stats_period
+
 
 def check_word(word, day, fails, print_urls=False):
     word = word.replace(' ','-').translate({ord('ь'): '', ord('ъ'): ''})
@@ -103,7 +134,11 @@ def check_word(word, day, fails, print_urls=False):
         trans_word = transliterate.translit(word, 'tgru', reversed=True)
         baseurl=f'https://telegra.ph/{trans_word}'
 
+    stats['word'] = word
+    stats['words'] += 1
+
     url=f'{baseurl}-{day.month:02}-{day.day:02}'
+    stats['url'] = url
 
     if print_urls:
         print(url)
@@ -111,6 +146,7 @@ def check_word(word, day, fails, print_urls=False):
 
     # r = requests.get(url)  
     p = analyse(url)
+    save_stats()
     if p.error:
         return
     c=2
@@ -118,7 +154,9 @@ def check_word(word, day, fails, print_urls=False):
 
     while nfails<fails:
         url=f'{baseurl}-{day.month:02}-{day.day:02}-{c}'
+        stats['url'] = url
         p = analyse(url)
+        save_stats()
         if p.error:
             nfails += 1
         else:
@@ -126,9 +164,8 @@ def check_word(word, day, fails, print_urls=False):
         c+=1
 
 
-
 def main():
-    global nude, video, verbose, all_found, nudity_threshold
+    global nude, video, verbose, all_found, nudity_threshold, stats_file
 
     words = None
     args = get_args()
@@ -155,6 +192,7 @@ def main():
         return
 
     if args.wordlist:
+        stats_file = args.stats
         with open(args.wordlist) as fh:
             words = [line.rstrip() for line in fh]
     
