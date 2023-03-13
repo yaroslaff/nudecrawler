@@ -83,6 +83,12 @@ This list (~300Kb, 11k urls) created from 1.5M words russian wordlist. There are
 
 Now you can use this file as wordlist (nudecrawler will detect it's already base URL, and will only append date to URL). 
 
+## Example usage:
+~~~
+bin/nudecrawler -w urls.txt --nude 5 -d 30 -b --stats /tmp/nudecrawler-stats.txt | tee logs/urls.log
+~~~
+process urls from urls.txt, report page if 5+ nude images (or 1 any video, default), check from todays date to 30 days ago, unbuffer output and log it to logs/urls.log, save periodical statistics to /tmp/nudecrawler-stats.txt
+
 ## Options
 ~~~
 usage: nudecrawler [-h] [-d DAYS] [--nude NUDE] [--video VIDEO] [-u URL] [-v] [words ...]

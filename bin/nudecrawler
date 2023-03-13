@@ -23,8 +23,10 @@ stats = {
     'words': 0,
     'word': None,
     'url': None,
-    'now': None
+    'now': None,
+    'interesting': 0
 }
+
 stats_file = None
 stats_period = 10
 
@@ -110,6 +112,7 @@ def analyse(url):
         return p
     p.check_all()
     if p.status().startswith('INTERESTING'):
+        stats['interesting']+=1
         p.print()
     return p
 
