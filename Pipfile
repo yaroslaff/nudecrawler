@@ -8,6 +8,7 @@ transliterate = "*"
 bs4 = "*"
 tqdm = "*"
 pillow = "*"
+requests = "*"
 
 [dev-packages]
 
