@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 transliterate = "*"
 bs4 = "*"
+tqdm = "*"
 
 [dev-packages]
 
