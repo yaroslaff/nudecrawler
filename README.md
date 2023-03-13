@@ -79,7 +79,7 @@ https://telegra.ph/aba
 https://telegra.ph/Abakan
 ....
 ~~~
-This list (~300Kb, 11k urls) created from 1.5M words russian wordlist. There are only words which had at least one page with this title for last 10 days. So it has words 'Анжелика' or 'Анфиса' (beautiful woman names), but has no words 'Абажурами' or 'Абажуродержателем').
+This list (~300Kb, 11k urls) created from 1.5M words russian wordlist. There are only words which had at least one page with this title for last 10 days. So it has words 'Анжелика' or 'Анфиса' (beautiful woman names), but has no words 'Абажурами' or 'Абажуродержателем' (Because there are no pages with these titles on telegra.ph).
 
 Now you can use this file as wordlist (nudecrawler will detect it's already base URL, and will only append date to URL). 
 

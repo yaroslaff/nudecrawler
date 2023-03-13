@@ -85,6 +85,8 @@ def get_args():
     parser.add_argument('-a', '--all', default=False, action='store_true', help='do not detect, print all found pages')
     parser.add_argument('-f', '--fails', type=int, default=0, help='stop searching next pages with same words after N failures')
     parser.add_argument('-t', '--threshold', type=float, default=0.2, help='nudity threshold (0..1), 0 will match almost everything')
+    parser.add_argument('--day', nargs=2, type=int, metavar=('MONTH', 'DAY'), help='Current date (default is today) example: --day 12 31')
+
 
     g = parser.add_argument_group('Output options')
     g.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
@@ -216,7 +218,12 @@ def main():
                 continue
 
 
-        day = datetime.datetime.now()
+
+        if args.day is None:
+            day = datetime.datetime.now()
+        else:
+            day = datetime.datetime(2020, args.day[0], args.day[1])
+            
         days_tried = 0
         while days_tried < args.days:
             check_word(w, day, args.fails, print_urls = args.urls)
