@@ -52,7 +52,8 @@ class RemoteImage:
         except requests.RequestException as e:
             print(e)
             print("maybe detector not running?")
-            print("See README.md how to start it")
+            print("docker run -d -p 9191:9191 opendating/adult-image-detector")
+            print("or add -a to skip filtering")
             sys.exit(1)
         
         # return r.json()['an_algorithm_for_nudity_detection']
