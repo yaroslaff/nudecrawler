@@ -18,21 +18,25 @@ transliterate.discover.autodiscover()
 nudity_threshold = 0.5
 
 stats = {
+    'cmd': None,
     'uptime': 0,
     'urls': 0,
     'words': 0,
     'word': None,
     'url': None,
     'now': None,
-    'interesting': 0
+    'interesting': 0,
+    'resume': dict()
 }
 
 stats_file = None
-stats_period = 10
+stats_period = 60
 
 stats_next_write = time.time() + stats_period
 
 started = time.time()
+
+logfile = None
 
 class TgRuLanguagePack(TranslitLanguagePack):
     language_code = "tgru"
@@ -92,12 +96,13 @@ def get_args():
     g.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
     g.add_argument('--unbuffered', '-b', default=False, action='store_true', help='Use unbuffered stdout')
     g.add_argument('--urls', default=False, action='store_true', help='Do not check, just generate and print URLs')
+    g.add_argument('--log', help='print all precious treasures to this logfile')
 
 
     g = parser.add_argument_group('list-related options')
     g.add_argument('-w', '--wordlist', help='wordlist (urllist) file')
     g.add_argument('--stats', default='/tmp/nudecrawler-stats.txt', help='periodical statistics file')
-    g.add_argument('--resume', metavar='WORD', help='skip all words before WORD in list, resume starting from it')
+    g.add_argument('--resume', default=False, action='store_true', help='skip all words before WORD in list, resume starting from it')
 
 
     return parser.parse_args()
@@ -115,7 +120,10 @@ def analyse(url):
     p.check_all()
     if p.status().startswith('INTERESTING'):
         stats['interesting']+=1
-        p.print()
+        if logfile:
+            with open(logfile, "a") as fh:
+                print(p, file=fh)
+        print(p)
     return p
 
 
@@ -130,7 +138,7 @@ def save_stats():
             stats_next_write = time.time() + stats_period
 
 
-def check_word(word, day, fails, print_urls=False):
+def check_word(word, day, fails, print_urls=False, resumecount=None):
     word = word.replace(' ','-').translate({ord('ь'): '', ord('ъ'): ''})
 
     if word.startswith("https://"):
@@ -145,19 +153,29 @@ def check_word(word, day, fails, print_urls=False):
     url=f'{baseurl}-{day.month:02}-{day.day:02}'
     stats['url'] = url
 
+    stats['resume']['month'] = day.month
+    stats['resume']['day'] = day.day    
+    stats['resume']['count'] = None
+
     if print_urls:
         print(url)
         return
 
     # r = requests.get(url)  
-    p = analyse(url)
-    save_stats()
-    if p.error:
-        return
-    c=2
-    nfails=0
+    if not resumecount:
+        p = analyse(url)
+        save_stats()
+        if p.error:
+            return
+        c=2
+    else:
+        c=resumecount
+        print(f"Resume from word {word} count {c}")
 
+    nfails=0
     while nfails<fails:
+
+
         url=f'{baseurl}-{day.month:02}-{day.day:02}-{c}'
         stats['url'] = url
         p = analyse(url)
@@ -166,11 +184,12 @@ def check_word(word, day, fails, print_urls=False):
             nfails += 1
         else:
             nfails=0
+        stats['resume']['count'] = c
         c+=1
 
 
 def main():
-    global nude, video, verbose, all_found, nudity_threshold, stats_file
+    global nude, video, verbose, all_found, nudity_threshold, stats_file, stats, logfile
 
     words = None
     args = get_args()
@@ -184,7 +203,12 @@ def main():
     matched_resume = False
     skipped_words = 0
 
+    # when fastforward, we go to specific word/day/count quickly
+    fastforward = False
+
     nudecrawler.verbose.verbose = verbose
+
+    stats['cmd'] = ' '.join(sys.argv)
 
     if args.unbuffered:
         sys.stdout = Unbuffered(sys.stdout)
@@ -208,27 +232,52 @@ def main():
         print("Need either -u URL or words like 'nude' or -w wordlist.txt")
         sys.exit(1)
 
+    logfile = args.log
+
+    if args.resume:
+        if not args.stats:
+            print("--resume work only with --stats")
+            sys.exit(1)
+        
+        with open(args.stats) as fh:
+            stats = json.load(fh)
+            fastforward = True
+                
+            
+
     for w in words:        
-        if args.resume and not matched_resume:
-            if w == args.resume:
+        if fastforward and not matched_resume:
+            if w == stats['resume']['word']:
                 matched_resume = True
-                print(f"Resume from word {w!r}, skipped: {skipped_words} words")
             else:
                 skipped_words += 1
                 continue
 
+        stats['resume']['word'] = w
 
 
-        if args.day is None:
+        if fastforward:
+            day = datetime.datetime(2020, stats['resume']['month'], stats['resume']['day'])
+        elif args.day is None:
             day = datetime.datetime.now()
         else:
             day = datetime.datetime(2020, args.day[0], args.day[1])
-            
+
         days_tried = 0
         while days_tried < args.days:
-            check_word(w, day, args.fails, print_urls = args.urls)
+            if fastforward:
+                resumecount = stats['resume']['count']
+            else:
+                resumecount = None
+            # stop fastforward
+            fastforward=False
+            check_word(w, day, args.fails, print_urls = args.urls, resumecount=resumecount)
+            
             days_tried += 1
             day = day - datetime.timedelta(days=1)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt as e:
+        print(e)

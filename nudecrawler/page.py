@@ -114,13 +114,18 @@ class Page:
         return "???"
 
 
-    def print(self):
-        print(self.status(), self.url)
+    def __str__(self):
+        
+        text = ''
+        
+        text += f'{self.status()} {self.url}\n'
+
         if self.all_found:
-            print("  Total images:", self.total_images)
+            text += f"  Total images: {self.total_images}\n"
         else:
-            print("  Nude:",self.nude_images, "non-nude:", self.nonnude_images)
+            text += f"  Nude: {self.nude_images} non-nude: {self.nonnude_images}\n"
         if self.total_video:
-            print("  Total video:", self.total_video)
-        print()
+            text += f"  Total video: {self.total_video}\n"
+        
+        return text
 
