@@ -113,6 +113,7 @@ def get_args():
 def analyse(url):
 
     p = Page(url, neednnudes=nude, neednvideo=video, all_found=all_found, threshold=nudity_threshold)
+
     stats['urls'] += 1
 
     if p.error:

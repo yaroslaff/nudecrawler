@@ -15,7 +15,7 @@ class RemoteImage:
         self.path = None
         pr = urlparse(self.url)
         suffix = os.path.splitext(pr.path)[1]
-        r = requests.get(url)
+        r = requests.get(url, timeout=10)
         r.raise_for_status()
         self.threshold = 0.5
 
@@ -40,7 +40,6 @@ class RemoteImage:
         except PIL.UnidentifiedImageError:
             raise ValueError('Incorrect image')
         w, h = img.size
-
 
         if w<200 or h<200:
             # boring! maybe icon
