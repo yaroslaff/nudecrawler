@@ -5,7 +5,7 @@ Nude crawler crawls all pages on telegra.ph for today and N past days for specif
 ## Ineffective intriguing warning
 No matter how old you are, no matter how tolerant you are, no matter what your sexual orientation is, no matter what your favorite perversion is, no matter how big your sexual horizons are, with NudeCrawler you will find a lot of things that **you will NOT like**.
 
-I wrote warning above because I have seen some shit (even literally).
+I wrote this warning because I have seen some shit. LITERALLY.
 
 Please use it only for legal and ethical purposes. And it's 18+ surely. 
 
