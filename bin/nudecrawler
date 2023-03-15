@@ -184,8 +184,8 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
             nfails += 1
         else:
             nfails=0
-        stats['resume']['count'] = c
         c+=1
+        stats['resume']['count'] = c
 
 
 def main():

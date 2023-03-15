@@ -85,24 +85,48 @@ Now you can use this file as wordlist (nudecrawler will detect it's already base
 
 ## Example usage:
 ~~~
-bin/nudecrawler -w urls.txt --nude 5 -d 30 -b --stats /tmp/nudecrawler-stats.txt | tee logs/urls.log
+bin/nudecrawler -w urls.txt --nude 5 -t 0.5 -d 30 -f 5 --stats .local/mystats.json  --log .local/nudecrawler.log 
 ~~~
-process urls from urls.txt, report page if 5+ nude images (or 1 any video, default), check from todays date to 30 days ago, unbuffer output and log it to logs/urls.log, save periodical statistics to /tmp/nudecrawler-stats.txt
+process urls from urls.txt, report page if 5+ nude images (or 1 any video, default), nudity must be over 0.5 threshold, check from todays date to 30 days ago, append all found pages to .local/nudecrawler.log, save periodical statistics to .local/mystats.json
+
+If crawler will see page `Sasha-Grey-01-23-100`, but `Sasha-Grey-01-23-101` is 404 Not Found, it will try `-102` and so on. It will stop only if 5 (-f) pages in a row will fail. 
+
+If you will stop nude crawler for some reason, you can resume it. Repeat full command (peek it from stats file) and append `--resume`.
 
 ## Options
 ~~~
-usage: nudecrawler [-h] [-d DAYS] [--nude NUDE] [--video VIDEO] [-u URL] [-v] [words ...]
+usage: nudecrawler [-h] [-d DAYS] [--nude NUDE] [--video VIDEO] [-u URL] [-a] [-f FAILS]
+                   [-t THRESHOLD] [--day MONTH DAY] [-v] [--unbuffered] [--urls] [--log LOG]
+                   [-w WORDLIST] [--stats STATS] [--resume]
+                   [words ...]
 
 Telegra.ph Spider
 
 positional arguments:
   words
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   -d DAYS, --days DAYS
   --nude NUDE           Interesting if N nude images
   --video VIDEO         Interesting if N video
   -u URL, --url URL     process one url
+  -a, --all             do not detect, print all found pages
+  -f FAILS, --fails FAILS
+                        stop searching next pages with same words after N failures
+  -t THRESHOLD, --threshold THRESHOLD
+                        nudity threshold (0..1), 0 will match almost everything
+  --day MONTH DAY       Current date (default is today) example: --day 12 31
+
+Output options:
   -v, --verbose         verbose
+  --unbuffered, -b      Use unbuffered stdout
+  --urls                Do not check, just generate and print URLs
+  --log LOG             print all precious treasures to this logfile
+
+list-related options:
+  -w WORDLIST, --wordlist WORDLIST
+                        wordlist (urllist) file
+  --stats STATS         periodical statistics file
+  --resume              skip all words before WORD in list, resume starting from it
 ~~~
