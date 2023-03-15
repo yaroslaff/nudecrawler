@@ -2,6 +2,13 @@
 
 Nude crawler crawls all pages on telegra.ph for today and N past days for specific words, checks number of nude, non-nude images, videos (not analysed) and reports pages which looks interesting (e.g. has more then 10 nude images, or has one video)
 
+## Ineffective intriguing warning
+No matter how old you are, no matter how tolerant you are, no matter what your sexual orientation is, no matter what your favorite perversion is, no matter how big your sexual horizons are, with NudeCrawler you will find a lot of things that **you will NOT like**.
+
+I wrote warning above because I have seen some shit (even literally).
+
+Please use it only for legal and ethical purposes. And it's 18+ surely. 
+
 ## Install
 
 ```
