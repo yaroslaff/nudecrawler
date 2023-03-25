@@ -44,13 +44,13 @@ INTERESTING https://telegra.ph/sasha-grey-XXXXX
 
 NudeCrawler can work with different nudity detectors and very easy to extend. Option `-a`/`--all` will disable detection totally, and it will report all pages.
 
-Bult-in filter `:nude` based on [nude.py](https://github.com/hhatto/nude.py), (python port of [nude.js](https://github.com/pa7/nude.js)) is mostly good and used by default (and does not needs to install many dependecties as with keras/tensorflow detectors, which better to use as Docker images)
+Bult-in filter `:nude` based on [nude.py](https://github.com/hhatto/nude.py), (python port of [nude.js](https://github.com/pa7/nude.js)) is mostly good and used by default (and does not needs to install many dependecties as with keras/tensorflow detectors, which better to use as Docker images), but it's slower
 
 There are two options to connect third-party filters, `--detect-image SCRIPT` and `--detect-url SCRIPT`, first one will call script and pass it filename of downloaded image to analyse, and second one will call script and pass it URL of image to analyse. Script should return with either 0 return code (image is SFW) or 1 (image is NSFW). Mnemonic: return code is number of *interesting* images. 
 
 if you will use `/bin/true` as script, it will detect all images as nude, and `/bin/false` will detect all images as non-nude.
 
-### start adult-image-detector 
+### detector: adult-image-detector 
 To use [adult-image-detector](https://github.com/open-dating/adult-image-detector):
 ~~~
 docker run -d -p 9191:9191 opendating/adult-image-detector
@@ -66,7 +66,7 @@ And use option `--detect-image PATH-TO/detect-image-aid.py` (usually: `/usr/loca
 
 adult-image-detector works good and fast for me, but has memory leaking so needs more and more RAM. It's good for short-time run
 
-### nsfw_api
+### detector: nsfw_api (recommended)
 
 To use [nsfw_api](https://github.com/arnidan/nsfw-api):
 
@@ -85,10 +85,7 @@ Safe /tmp/sketch-girl.jpg: {'hentai': 0.57, 'drawing': 0.4, 'porn': 0.02, 'neutr
 0
 ~~~
 
-
-
-
-### NudeNet
+### detector: NudeNet
 
 #### Installing NudeNet (little trick needed)
 Using NudeNet does not requires docker, but you need to install `pip3 install -U nudenet`. Also, NudeNet requires model in file `~/.NudeNet/classifier_model.onnx`, if file is missing, NudeNet *tries* to download file from https://github.com/notAI-tech/NudeNet/releases/download/v0/classifier_model.onnx but there is problem, github may display warning page instead of real .onnx file, so this page is downloaded (which is certainly wrong).
