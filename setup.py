@@ -17,9 +17,12 @@ setup(
     name='nudecrawler',
     version=get_version('bin/nudecrawler'),
     packages=['nudecrawler'],
-    scripts=['bin/nudecrawler'],
+    scripts=[
+    'bin/nudecrawler', 
+    'bin/detect-image-aid.py',
+    'bin/detect-url-nsfw-api.py'],
 
-    install_requires=['bs4', 'requests', 'pillow', 'tqdm', 'transliterate'],
+    install_requires=['bs4', 'requests', 'pillow', 'nudepy', 'transliterate'],
 
     url='https://github.com/yaroslaff/nudecrawler',
     license='MIT',

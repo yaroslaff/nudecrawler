@@ -20,16 +20,6 @@ alternatively, install right from git repo:
 pip3 install git+https://github.com/yaroslaff/nudecrawler
 ```
 
-## start adult-image-detector 
-If you want nudity detection, we use optional [adult-image-detector](https://github.com/open-dating/adult-image-detector):
-
-~~~
-docker run -d -p 9191:9191 opendating/adult-image-detector
-~~~
-
-Or just add `-a` option if you do not want to filter by number of nude images.
-
-
 
 ## Launch Nude Crawler!
 
@@ -49,6 +39,92 @@ INTERESTING https://telegra.ph/sasha-grey-XXXXX
 INTERESTING https://telegra.ph/sasha-grey-XXXXX
   Nude: 6 non-nude: 3
 ~~~
+
+## Working with different nudity detectors
+
+NudeCrawler can work with different nudity detectors and very easy to extend. Option `-a`/`--all` will disable detection totally, and it will report all pages.
+
+Bult-in filter `:nude` based on [nude.py](https://github.com/hhatto/nude.py), (python port of [nude.js](https://github.com/pa7/nude.js)) is mostly good and used by default (and does not needs to install many dependecties as with keras/tensorflow detectors, which better to use as Docker images)
+
+There are two options to connect third-party filters, `--detect-image SCRIPT` and `--detect-url SCRIPT`, first one will call script and pass it filename of downloaded image to analyse, and second one will call script and pass it URL of image to analyse. Script should return with either 0 return code (image is SFW) or 1 (image is NSFW). Mnemonic: return code is number of *interesting* images. 
+
+if you will use `/bin/true` as script, it will detect all images as nude, and `/bin/false` will detect all images as non-nude.
+
+### start adult-image-detector 
+To use [adult-image-detector](https://github.com/open-dating/adult-image-detector):
+~~~
+docker run -d -p 9191:9191 opendating/adult-image-detector
+
+# or limit to 4G RAM
+sudo docker run -d -p 9191:9191 --memory=4G opendating/adult-image-detector
+
+# or 
+sudo docker run --rm -d -p 9191:9191 --name aid --memory=1G opendating/adult-image-detector
+~~~
+
+And use option `--detect-image PATH-TO/detect-image-aid.py` (usually: `/usr/local/bin/aid.py`)
+
+adult-image-detector works good and fast for me, but has memory leaking so needs more and more RAM. It's good for short-time run
+
+### nsfw_api
+
+To use [nsfw_api](https://github.com/arnidan/nsfw-api):
+
+Start:
+~~~
+sudo docker run --rm --name nsfw-api -d -p 3000:3000 ghcr.io/arnidan/nsfw-api:latest
+~~~
+
+Use option `--detect-image PATH_TO/detect-url-nsfw-api.py`
+
+This detector understands DETECTOR_VERBOSE, and special threshold for each of NSFW classes (porn, sexy, hentai),
+also, DETECTOR_THRESHOLD sets default threshold for all classes.
+~~~
+DETECTOR_VERBOSE=1 DETECTOR_THRESHOLD_HENTAI=0.9 bin/detect-image-nsfw-api.py /tmp/sketch-girl.jpg ; echo $?
+Safe /tmp/sketch-girl.jpg: {'hentai': 0.57, 'drawing': 0.4, 'porn': 0.02, 'neutral': 0.01, 'sexy': 0.0}
+0
+~~~
+
+
+
+
+### NudeNet
+
+#### Installing NudeNet (little trick needed)
+Using NudeNet does not requires docker, but you need to install `pip3 install -U nudenet`. Also, NudeNet requires model in file `~/.NudeNet/classifier_model.onnx`, if file is missing, NudeNet *tries* to download file from https://github.com/notAI-tech/NudeNet/releases/download/v0/classifier_model.onnx but there is problem, github may display warning page instead of real .onnx file, so this page is downloaded (which is certainly wrong).
+
+Workaround is simple - after you will install NudeNet download model *manually* (no wget!) and place it to `~/.NudeNet/`
+
+#### Using NudeNet with NudeCrawler
+[NudeNet](https://github.com/notAI-tech/NudeNet) filtering is implemented as client-server. Start server (PATH_TO/detect-server-nudenet.py) on other terminal (or screen/tmux) and add option `--detect-image PATH_TO/detect-image-nudenet.py` to NudeCrawler.
+
+### Writing your own detector
+If you want to write your own detector, explore current detector scripts as example, buy main rules:
+- Image URL or PATH passed as argv[1]
+- Return 0 if image is safe and boring, return 1 if image is interesting
+- Return 0 if there are any technical problems (timeout or 404)
+- Additioncal configuration could be specified via environment, NudeCrawler will pass environment to your script
+- NudeCrawler also sets env variables `NUDECRAWLER_PAGE_URL` and `NUDECRAWLER_IMAGE_URL`
+
+
+### Prefiltering
+To speed-up processing, nudecrawler uses pre-filtering, HTTP HEAD request is performed for any image, and further processing is performed only if images passes basic check:
+- Image URL must return status 200
+- If server responds with Content-Length in response headers (telegra.ph uses Content-Length), it must be more then `--minsize` (minsize specified in Kb, and default value is 10Kb). This saves us from downloading/filtering icons.
+
+
+### Benchmarking/test
+Tested on same page, different technologies (default thresholds) gives different results:
+
+| filtering technology           | time   | results                                       |
+|---                             |---     |---                                            |
+|:nude (bilt-in)                 | 3m 16s | total: 22 (need: 1) nude: 15 (1) video: 0 (1) |
+|detect-image-nsfw_api (docker)  | 31s    | total: 22 (need: 1) nude: 20 (1) video: 0 (1) |
+|detect-image-detector (docker)  | 37s    | total: 22 (need: 1) nude: 10 (1) video: 0 (1) |
+|detect-image-nudenet  (scripts) | 32s    | total: 22 (need: 1) nude: 20 (1) video: 0 (1) |
+
+
+
 
 ## Working with wordlists
 In simplest case (not so big wordlist), just use `-w`, like:
@@ -92,7 +168,7 @@ Now you can use this file as wordlist (nudecrawler will detect it's already base
 
 ## Example usage:
 ~~~
-bin/nudecrawler -w urls.txt --nude 5 -t 0.5 -d 30 -f 5 --stats .local/mystats.json  --log .local/nudecrawler.log 
+bin/nudecrawler -w urls.txt --nude 5 -d 30 -f 5 --stats .local/mystats.json  --log .local/nudecrawler.log 
 ~~~
 process urls from urls.txt, report page if 5+ nude images (or 1 any video, default), nudity must be over 0.5 threshold, check from todays date to 30 days ago, append all found pages to .local/nudecrawler.log, save periodical statistics to .local/mystats.json
 

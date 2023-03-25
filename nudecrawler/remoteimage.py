@@ -6,8 +6,11 @@ from urllib.parse import urlparse
 import tempfile
 import sys
 import requests
+import subprocess
+import nude
+from .exceptions import ProblemImage
 
-detector_address = 'http://localhost:9191/api/v1/detect'
+# detector_address = 'http://localhost:9191/api/v1/detect'
 
 class RemoteImage:
     def __init__(self, url):        
@@ -15,8 +18,15 @@ class RemoteImage:
         self.path = None
         pr = urlparse(self.url)
         suffix = os.path.splitext(pr.path)[1]
-        r = requests.get(url, timeout=10)
-        r.raise_for_status()
+        try:            
+            r = requests.get(url, timeout=10)
+        except requests.exceptions.RequestException as e:
+            raise ProblemImage(f'Requests.exception for {self.url}: {e}')
+
+        # r.raise_for_status()
+        if r.status_code != 200:
+            raise ProblemImage(f'Bad status {r.status_code} for {self.url}')
+
         self.threshold = 0.5
 
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
@@ -32,6 +42,21 @@ class RemoteImage:
 
     def download(self):
         pass
+
+    def detect_image(self, script):
+        """
+        new method, using external script
+        """
+
+        if script==':nude':
+            return nude.is_nude(self.path)
+
+        rc = subprocess.run([script, self.path], env=os.environ.copy())
+        if rc.returncode >= 100:
+            print("FATAL ERROR")
+            sys.exit(1)        
+        return bool(rc.returncode)
+
 
     def detect_nudity(self):
 

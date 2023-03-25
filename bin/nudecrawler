@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 
-# asdf3
-
 import argparse
 import datetime
 import json
 import time
 import sys
+import os
 import nudecrawler 
 from nudecrawler import Page, Unbuffered
+from nudecrawler.page import  get_processed_images
 
 import transliterate.discover 
 from transliterate.base import TranslitLanguagePack, registry
 
 transliterate.discover.autodiscover()
-
-nudity_threshold = 0.5
 
 stats = {
     'cmd': None,
@@ -25,7 +23,8 @@ stats = {
     'word': None,
     'url': None,
     'now': None,
-    'interesting': 0,
+    'found_interesting_pages': 0,
+    'found_nude_images': 0,
     'resume': dict()
 }
 
@@ -37,20 +36,29 @@ stats_next_write = time.time() + stats_period
 started = time.time()
 
 logfile = None
+stop_after = None
+detect_image = None
+detect_url = None
+
+page_extensions = None
+page_image_minsize = 10000
+page_mintotal = 0
 
 class TgRuLanguagePack(TranslitLanguagePack):
     language_code = "tgru"
     language_name = "tgru"
+
+    character_ranges = ((0x0400, 0x04FF), (0x0500, 0x052F))
 
     mapping = (
         u"abvgdezijklmnoprstufhcC'y'ABVGDEZIJKLMNOPRSTUFH'Y'",
         u"абвгдезийклмнопрстуфхцЦъыьАБВГДЕЗИЙКЛМНОПРСТУФХЪЫЬ",
     )
 
-    reversed_specific_mapping = (
-        u"эЭъьЪЬ",
-        u"eE''''"
-    )
+    #reversed_specific_mapping = (
+    #    u"ъьЪЬ",
+    #    u"''''"
+    #)
 
     pre_processor_mapping = {
         u"zh": u"ж",
@@ -68,8 +76,11 @@ class TgRuLanguagePack(TranslitLanguagePack):
         u"Sh": u"Ш",
         u"Sch": u"Щ",
         u"Yu": u"Ю",
-        u"Ja": u"Я"
+        u"Ja": u"Я",
+        u"EH": u"Э",
+        u"eh": u"э"
     }
+
 
 registry.register(TgRuLanguagePack)
 
@@ -81,29 +92,38 @@ all_found = True
 
 def get_args():
     parser = argparse.ArgumentParser(description='Telegra.ph Spider')
+
+    def_total =5
+    def_minsize=10
+
     parser.add_argument('words', nargs='*')
     parser.add_argument('-d', '--days', type=int, default=30)
-    parser.add_argument('--nude', type=int, default=1, help='Interesting if N nude images')
-    parser.add_argument('--video', type=int, default=1, help='Interesting if N video')
-    parser.add_argument('-u', '--url', help='process one url')
-    parser.add_argument('-a', '--all', default=False, action='store_true', help='do not detect, print all found pages')
+    parser.add_argument('--nude', metavar='N', type=int, default=1, help='Interesting if N+ nude images')
+    parser.add_argument('--total', metavar='N', type=int, default=5, help=f'Interesting if N+ total images ({def_total})')
+    parser.add_argument('--video', metavar='N', type=int, default=1, help='Interesting if N+ video')
+    parser.add_argument('--url1', metavar="URL", help='process only one url')
     parser.add_argument('-f', '--fails', type=int, default=0, help='stop searching next pages with same words after N failures')
-    parser.add_argument('-t', '--threshold', type=float, default=0.2, help='nudity threshold (0..1), 0 will match almost everything')
     parser.add_argument('--day', nargs=2, type=int, metavar=('MONTH', 'DAY'), help='Current date (default is today) example: --day 12 31')
+    parser.add_argument('--stop', type=int, metavar='NUM_IMAGES', help='stop after N images processed (or little after)')
 
+
+    g = parser.add_argument_group('Image filtering options')
+    g.add_argument('-a', '--all', default=False, action='store_true', help='do not detect, print all found pages')
+    g.add_argument('--detect-image', help='script to detect nudity on image file')
+    g.add_argument('--detect-url', help='script to detect nudity on image URL')
+    g.add_argument('--extensions', nargs='*', default=['.jpeg','.jpg', '.png'],help='interesting extensions (with dot, like .jpg)')
+    g.add_argument('--minsize', type=int, default=def_minsize,help=f'min size of image in Kb ({def_minsize})')
 
     g = parser.add_argument_group('Output options')
     g.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
     g.add_argument('--unbuffered', '-b', default=False, action='store_true', help='Use unbuffered stdout')
-    g.add_argument('--urls', default=False, action='store_true', help='Do not check, just generate and print URLs')
+    g.add_argument('--urls', default=False, action='store_true', help='Do not detect, just generate and print URLs')    
     g.add_argument('--log', help='print all precious treasures to this logfile')
 
 
     g = parser.add_argument_group('list-related options')
     g.add_argument('-w', '--wordlist', help='wordlist (urllist) file')
     g.add_argument('--stats', default='/tmp/nudecrawler-stats.txt', help='periodical statistics file')
-    g.add_argument('--resume', default=False, action='store_true', help='skip all words before WORD in list, resume starting from it')
-
 
     return parser.parse_args()
 
@@ -112,25 +132,41 @@ def get_args():
 
 def analyse(url):
 
-    p = Page(url, neednnudes=nude, neednvideo=video, all_found=all_found, threshold=nudity_threshold)
+    p = Page(url, neednnudes=nude, neednvideo=video, all_found=all_found,
+            detect_url=detect_url, detect_image=detect_image)
+
+    p.image_minsize = page_image_minsize
+    p.image_extensions = page_extensions
 
     stats['urls'] += 1
 
     if p.error:
         return p
     p.check_all()
+
     if p.status().startswith('INTERESTING'):
-        stats['interesting']+=1
+        stats['found_interesting_pages'] += 1
+        stats['found_nude_images'] += p.nude_images
         if logfile:
             with open(logfile, "a") as fh:
                 print(p, file=fh)
         print(p)
+
+    save_stats(force=True)
+    if stop_after is not None and get_processed_images() > stop_after:
+        print("Stopping after processed", get_processed_images(), "images")
+        sys.exit(2)
+
     return p
 
 
-def save_stats():
+def save_stats(force=False):
     global stats_next_write    
-    if time.time() > stats_next_write:
+
+    if stats_file is None:
+        return
+
+    if time.time() > stats_next_write or force:
         stats['now'] = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
         stats['uptime'] = int(time.time() - started)
         
@@ -165,7 +201,6 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
     # r = requests.get(url)  
     if not resumecount:
         p = analyse(url)
-        save_stats()
         if p.error:
             return
         c=2
@@ -180,7 +215,7 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
         url=f'{baseurl}-{day.month:02}-{day.day:02}-{c}'
         stats['url'] = url
         p = analyse(url)
-        save_stats()
+
         if p.error:
             nfails += 1
         else:
@@ -189,20 +224,36 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
         stats['resume']['count'] = c
 
 
+def sanity_check(args):
+    pass
+
+
 def main():
-    global nude, video, verbose, all_found, nudity_threshold, stats_file, stats, logfile
+    global nude, video, verbose, all_found, stats_file, stats, logfile, \
+        stop_after, detect_image, detect_url, page_image_minsize, page_extensions, \
+        page_mintotal
 
     words = None
     args = get_args()
+
+    sanity_check(args)
 
 
     nude = args.nude
     video = args.video
     verbose = args.verbose
-    all_found = args.all
-    nudity_threshold = args.threshold
+    all_found = args.all    
     matched_resume = False
     skipped_words = 0
+    stop_after = args.stop
+    detect_url = args.detect_url
+    detect_image = args.detect_image
+
+
+    # fix arguments
+    if not any([detect_image, detect_url, all_found]):
+        print("# No filter, using built-in :nude by default")
+        detect_image=':nude'
 
     # when fastforward, we go to specific word/day/count quickly
     fastforward = False
@@ -214,13 +265,28 @@ def main():
     if args.unbuffered:
         sys.stdout = Unbuffered(sys.stdout)
 
-    if args.url:
-        p = analyse(args.url)
+    if args.extensions:
+        page_extensions = args.extensions
+    
+    if args.minsize:
+        page_image_minsize = args.minsize * 1024
+
+    if args.total:
+        page_mintotal = args.total
+
+
+    # processing could start here
+    # --url1 
+    if args.url1:
+        p = analyse(args.url1)
         if p.error:
-            print("ERROR")
-        # print(p.status())
+            print("Page returned ERROR")
+        print(p.status())
+        for msg in p._log:
+            print(" ", msg)
         return
 
+    ## wordlist
     if args.wordlist:
         stats_file = args.stats
         with open(args.wordlist) as fh:
@@ -230,21 +296,15 @@ def main():
         words = args.words
     
     if not words:
-        print("Need either -u URL or words like 'nude' or -w wordlist.txt")
+        print("Need either --url1 URL or words like 'nude' or -w wordlist.txt")
         sys.exit(1)
 
     logfile = args.log
 
-    if args.resume:
-        if not args.stats:
-            print("--resume work only with --stats")
-            sys.exit(1)
-        
+    if args.stats and os.path.exists(args.stats):
         with open(args.stats) as fh:
             stats = json.load(fh)
             fastforward = True
-                
-            
 
     for w in words:        
         if fastforward and not matched_resume:
