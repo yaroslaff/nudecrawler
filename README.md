@@ -53,12 +53,6 @@ if you will use `/bin/true` as script, it will detect all images as nude, and `/
 ### detector: adult-image-detector 
 To use [adult-image-detector](https://github.com/open-dating/adult-image-detector):
 ~~~
-docker run -d -p 9191:9191 opendating/adult-image-detector
-
-# or limit to 4G RAM
-sudo docker run -d -p 9191:9191 --memory=4G opendating/adult-image-detector
-
-# or 
 sudo docker run --rm -d -p 9191:9191 --name aid --memory=1G opendating/adult-image-detector
 ~~~
 
