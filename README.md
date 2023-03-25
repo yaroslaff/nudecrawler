@@ -90,7 +90,7 @@ Workaround is simple - after you will install NudeNet download model *manually* 
 [NudeNet](https://github.com/notAI-tech/NudeNet) filtering is implemented as client-server. Start server (PATH_TO/detect-server-nudenet.py) on other terminal (or screen/tmux) and add option `--detect-image PATH_TO/detect-image-nudenet.py` to NudeCrawler.
 
 ### Writing your own detector
-If you want to write your own detector, explore current detector scripts as example, buy main rules:
+If you want to write your own detector, explore current detector scripts as example, but here is main rules:
 - Image URL or PATH passed as argv[1]
 - Return 0 if image is safe and boring, return 1 if image is interesting
 - Return 0 if there are any technical problems (timeout or 404)
