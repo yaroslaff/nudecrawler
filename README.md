@@ -50,16 +50,6 @@ There are two options to connect third-party filters, `--detect-image SCRIPT` an
 
 if you will use `/bin/true` as script, it will detect all images as nude, and `/bin/false` will detect all images as non-nude.
 
-### detector: adult-image-detector 
-To use [adult-image-detector](https://github.com/open-dating/adult-image-detector):
-~~~
-sudo docker run --rm -d -p 9191:9191 --name aid --memory=1G opendating/adult-image-detector
-~~~
-
-And use option `--detect-image PATH-TO/detect-image-aid.py` (usually: `/usr/local/bin/aid.py`)
-
-adult-image-detector works good and fast for me, but has memory leaking so needs more and more RAM. It's good for short-time run
-
 ### detector: nsfw_api (recommended)
 
 To use [nsfw_api](https://github.com/arnidan/nsfw-api):
@@ -78,6 +68,16 @@ DETECTOR_VERBOSE=1 DETECTOR_THRESHOLD_HENTAI=0.9 bin/detect-image-nsfw-api.py /t
 Safe /tmp/sketch-girl.jpg: {'hentai': 0.57, 'drawing': 0.4, 'porn': 0.02, 'neutral': 0.01, 'sexy': 0.0}
 0
 ~~~
+
+### detector: adult-image-detector 
+To use [adult-image-detector](https://github.com/open-dating/adult-image-detector):
+~~~
+sudo docker run --rm -d -p 9191:9191 --name aid --memory=1G opendating/adult-image-detector
+~~~
+
+And use option `--detect-image PATH-TO/detect-image-aid.py` (usually: `/usr/local/bin/aid.py`)
+
+adult-image-detector works good and fast for me, but has memory leaking so needs more and more RAM. It's good for short-time run
 
 ### detector: NudeNet
 
