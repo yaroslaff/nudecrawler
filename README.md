@@ -50,6 +50,8 @@ There are two options to connect third-party filters, `--detect-image SCRIPT` an
 
 if you will use `/bin/true` as script, it will detect all images as nude, and `/bin/false` will detect all images as non-nude.
 
+Scripts are usually installed to /usr/local/bin and if it's in $PATH, you do not need to specify full path to script, nudecrawler will find it in $PATH.
+
 ### detector: nsfw_api (recommended)
 
 To use [nsfw_api](https://github.com/arnidan/nsfw-api):
@@ -59,7 +61,7 @@ Start:
 sudo docker run --rm --name nsfw-api -d -p 3000:3000 ghcr.io/arnidan/nsfw-api:latest
 ~~~
 
-Use option `--detect-image PATH_TO/detect-url-nsfw-api.py`
+Use option `--detect-image PATH_TO/detect-url-nsfw-api.py` (PATH_TO  is usually /usr/local/bin if you installed with `pip3 install nudecrawler`)
 
 This detector understands DETECTOR_VERBOSE, and special threshold for each of NSFW classes (porn, sexy, hentai),
 also, DETECTOR_THRESHOLD sets default threshold for all classes.
@@ -82,9 +84,11 @@ adult-image-detector works good and fast for me, but has memory leaking so needs
 ### detector: NudeNet
 
 #### Installing NudeNet (little trick needed)
-Using NudeNet does not requires docker, but you need to install `pip3 install -U nudenet`. Also, NudeNet requires model in file `~/.NudeNet/classifier_model.onnx`, if file is missing, NudeNet *tries* to download file from https://github.com/notAI-tech/NudeNet/releases/download/v0/classifier_model.onnx but there is problem, github may display warning page instead of real .onnx file, so this page is downloaded (which is certainly wrong).
+Using NudeNet does not requires docker, but you need to install `pip3 install -U flask nudenet` (consider using virtualenv, because nudenet has many dependencies). Also, NudeNet requires model in file `~/.NudeNet/classifier_model.onnx`, if file is missing, NudeNet (unsuccessfully) *tries* to download file from https://github.com/notAI-tech/NudeNet/releases/download/v0/classifier_model.onnx but there is problem, github may display warning page instead of real .onnx file, so this page is downloaded (which is certainly wrong).
 
-Workaround is simple - after you will install NudeNet download model *manually* (no wget!) and place it to `~/.NudeNet/`
+Right way workaround is simple - after you will install NudeNet download model *manually* (no wget!) and place it to `~/.NudeNet/`
+
+Or you can download from my temporary site: `wget https://nudecrawler.netlify.app/classifier_model.onnx` (But I cannot promise it will be there forever) and put it to ~/.NudeNet .
 
 #### Using NudeNet with NudeCrawler
 [NudeNet](https://github.com/notAI-tech/NudeNet) filtering is implemented as client-server. Start server (PATH_TO/detect-server-nudenet.py) on other terminal (or screen/tmux) and add option `--detect-image PATH_TO/detect-image-nudenet.py` to NudeCrawler.
@@ -94,7 +98,7 @@ If you want to write your own detector, explore current detector scripts as exam
 - Image URL or PATH passed as argv[1]
 - Return 0 if image is safe and boring, return 1 if image is interesting
 - Return 0 if there are any technical problems (timeout or 404)
-- Additioncal configuration could be specified via environment, NudeCrawler will pass environment to your script
+- Additional configuration could be specified via environment, NudeCrawler will pass environment to your script
 - NudeCrawler also sets env variables `NUDECRAWLER_PAGE_URL` and `NUDECRAWLER_IMAGE_URL`
 
 

@@ -23,7 +23,12 @@ stats = {
     'urls': 0,
     'words': 0,
     'word': None,
-    'url': None,
+    'last_url': None,
+    'last_url_status': None,
+    'last_url_status_detailed': None,
+    'last_interesting_url': None,
+    'last_interesting_url_status': None,
+    'last_interesting_url_status_detailed': None,
     'now': None,
     'processed_images': 0,
     'found_interesting_pages': 0,
@@ -152,16 +157,24 @@ def analyse(url):
     if p.error:
         return p
     p.check_all()
+    stats['last_url'] = url
+    stats['last_url_status'] = p._status
+    stats['last_url_status_detailed'] = p._status_detailed
+
 
     if p.status().startswith('INTERESTING'):
         stats['found_interesting_pages'] += 1
         stats['found_nude_images'] += p.nude_images
+        stats['last_interesting_url'] = url
+        stats['last_interesting_url_status'] = p._status
+        stats['last_interesting_url_status_detailed'] = p._status_detailed
+
         if logfile:
             with open(logfile, "a") as fh:
                 print(p, file=fh)
         print(p)
 
-    save_stats(force=True)
+    save_stats(force=False)
     if stop_after is not None and get_processed_images() > stop_after:
         print("Stop/refresh after processed", get_processed_images(), "images...")
         if refresh:
@@ -206,7 +219,6 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
     stats['words'] += 1
 
     url=f'{baseurl}-{day.month:02}-{day.day:02}'
-    stats['url'] = url
 
     stats['resume']['month'] = day.month
     stats['resume']['day'] = day.day    
@@ -231,7 +243,6 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
 
 
         url=f'{baseurl}-{day.month:02}-{day.day:02}-{c}'
-        stats['url'] = url
         p = analyse(url)
 
         if p.error:
