@@ -23,7 +23,7 @@ setup(
     'bin/detect-image-nsfw-api.py',
     'bin/detect-image-nudenet.py',
     'bin/detect-server-nudenet.py',
-    'bin/refresh-nsfw-api.py'
+    'bin/refresh-nsfw-api.sh'
     ],
 
     install_requires=['bs4', 'requests', 'pillow', 'nudepy', 'transliterate'],
