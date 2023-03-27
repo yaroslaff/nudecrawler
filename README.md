@@ -103,6 +103,13 @@ To speed-up processing, nudecrawler uses pre-filtering, HTTP HEAD request is per
 - Image URL must return status 200
 - If server responds with Content-Length in response headers (telegra.ph uses Content-Length), it must be more then `--minsize` (minsize specified in Kb, and default value is 10Kb). This saves us from downloading/filtering icons.
 
+### Long-time run
+
+#### Stop/Resume
+When working with worklists an --stats file, current status is periodically saved to this file. If you need to resume it, just use command `nudecrawler --resume PATH/TO/stats.json`
+
+#### Memory leaking in containers
+You may check container memory usage with `sudo docker stats` or `sudo docker stats --no-stream`. Often containers consume more and more memory with time, leading to out-of-memory in the end. To prevent this problem use combination of `--stop` and `--refresh` like `--stop 1000 --refresh bin/refresh-nsfw-api.sh` this will call refresh script every 1000 images. Refresh script should stop current container and start it again. See source of refresh-nsfw-api.sh for example, it's very simple.
 
 ### Benchmarking/test
 Tested on same page, different technologies (default thresholds) gives different results:
@@ -113,9 +120,6 @@ Tested on same page, different technologies (default thresholds) gives different
 |detect-image-nsfw_api (docker)  | 31s    | total: 22 (need: 1) nude: 20 (1) video: 0 (1) |
 |detect-image-detector (docker)  | 37s    | total: 22 (need: 1) nude: 10 (1) video: 0 (1) |
 |detect-image-nudenet  (scripts) | 32s    | total: 22 (need: 1) nude: 20 (1) video: 0 (1) |
-
-
-
 
 ## Working with wordlists
 In simplest case (not so big wordlist), just use `-w`, like:
@@ -157,30 +161,35 @@ This list (~300Kb, 11k urls) created from 1.5M words russian wordlist. There are
 
 Now you can use this file as wordlist (nudecrawler will detect it's already base URL, and will only append date to URL). 
 
-### Stop/Resume
-When working with worklists an --stats file, current status is periodically saved to this file. When starting again, if stats file exists, nudecrawler will continue from last recording point. To start it from the beginning, delete stats file or use different `--stats filename`.
-
 ### Example usage:
 Check one page (using built-in :nude filter):
 ~~~
-bin/nudecrawler -v --url1 https://telegra.ph/your-page-address 
+nudecrawler -v --url1 https://telegra.ph/your-page-address 
 ~~~
 
 
 ~~~
-bin/nudecrawler -w urls.txt --nude 5 -d 30 -f 5 --stats .local/mystats.json  --log .local/nudecrawler.log 
+nudecrawler -w urls.txt --nude 5 -d 30 -f 5 --stats .local/mystats.json  --log .local/nudecrawler.log 
 ~~~
 process urls from urls.txt, report page if 5+ nude images (or 1 any video, default), nudity must be over 0.5 threshold, check from todays date to 30 days ago, append all found pages to .local/nudecrawler.log, save periodical statistics to .local/mystats.json
 
 If crawler will see page `Sasha-Grey-01-23-100`, but `Sasha-Grey-01-23-101` is 404 Not Found, it will try `-102` and so on. It will stop only if 5 (-f) pages in a row will fail. 
 
-If you will stop nude crawler for some reason, you can resume it. Repeat full command (peek it from stats file) and append `--resume`.
+~~~
+nudecrawler -v --detect-image bin/detect-image-nsfw-api.py -f 5 --total 10 --nude 3 -w urls.txt --stats .local/stats.json --log .local/urls.log --stop 1000 --refresh bin/refresh-nsfw-api.sh
+~~~
+
+Work verbosely (-v), use NSFW_API for resolving (and call refresh-nsfw-api.sh script to restart docker container every 1000 images).
 
 ## Options
 ~~~
-usage: nudecrawler [-h] [-d DAYS] [--nude NUDE] [--video VIDEO] [-u URL] [-a] [-f FAILS]
-                   [-t THRESHOLD] [--day MONTH DAY] [-v] [--unbuffered] [--urls] [--log LOG]
-                   [-w WORDLIST] [--stats STATS] [--resume]
+usage: nudecrawler [-h] [-d DAYS] [--nude N] [--total N] [--video N]
+                   [--url1 URL] [-f FAILS] [--day MONTH DAY] [-a]
+                   [--detect-image DETECT_IMAGE] [--detect-url DETECT_URL]
+                   [--extensions [EXTENSIONS ...]] [--minsize MINSIZE] [-v]
+                   [--unbuffered] [--urls] [--log LOG] [-w WORDLIST]
+                   [--stats STATS_FILE] [--resume STATS_FILE]
+                   [--stop NUM_IMAGES] [--refresh SCRIPT [ARG ...]]
                    [words ...]
 
 Telegra.ph Spider
@@ -191,25 +200,38 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -d DAYS, --days DAYS
-  --nude NUDE           Interesting if N nude images
-  --video VIDEO         Interesting if N video
-  -u URL, --url URL     process one url
-  -a, --all             do not detect, print all found pages
+  --nude N              Interesting if N+ nude images
+  --total N             Interesting if N+ total images (5)
+  --video N             Interesting if N+ video
+  --url1 URL            process only one url
   -f FAILS, --fails FAILS
-                        stop searching next pages with same words after N failures
-  -t THRESHOLD, --threshold THRESHOLD
-                        nudity threshold (0..1), 0 will match almost everything
+                        stop searching next pages with same words after N
+                        failures
   --day MONTH DAY       Current date (default is today) example: --day 12 31
+
+Image filtering options:
+  -a, --all             do not detect, print all found pages
+  --detect-image DETECT_IMAGE
+                        script to detect nudity on image file
+  --detect-url DETECT_URL
+                        script to detect nudity on image URL
+  --extensions [EXTENSIONS ...]
+                        interesting extensions (with dot, like .jpg)
+  --minsize MINSIZE     min size of image in Kb (10)
 
 Output options:
   -v, --verbose         verbose
   --unbuffered, -b      Use unbuffered stdout
-  --urls                Do not check, just generate and print URLs
+  --urls                Do not detect, just generate and print URLs
   --log LOG             print all precious treasures to this logfile
 
 list-related options:
   -w WORDLIST, --wordlist WORDLIST
                         wordlist (urllist) file
-  --stats STATS         periodical statistics file
-  --resume              skip all words before WORD in list, resume starting from it
+  --stats STATS_FILE    periodical statistics file
+  --resume STATS_FILE   resume from STATS_FILE (other args are not needed)
+  --stop NUM_IMAGES     stop (or --refresh) after N images processed (or
+                        little after)
+  --refresh SCRIPT [ARG ...]
+                        run this refresh script every --stop NUM_IMAGES images
 ~~~
