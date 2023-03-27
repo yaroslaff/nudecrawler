@@ -1,9 +1,14 @@
 [tool.poetry]
 name = "nudecrawler"
 version = "0.1.0"
-description = ""
+description = "Crawl telegra.ph searching for nudes!"
 authors = ["Yaroslav Polyakov <yaroslaff@gmail.com>"]
 readme = "README.md"
+homepage = "https://github.com/yaroslaff/nudecrawler"
+repository = "https://github.com/yaroslaff/nudecrawler"
+license = "MIT"
+keywords = ["nsfw", "tits", "nudity-detection", "nsfw-recognition", "nudes", "onlyfans", "nude", "telegra-ph", "search", "crawler", "scraper", "spider", "scraping", "find", "web-scraping", "crawl", "scrape", "webscraping"]
+
 
 [tool.poetry.dependencies]
 python = "^3.9"
