@@ -128,7 +128,7 @@ def get_args(argv=None):
     g = parser.add_argument_group('list-related options')
     g.add_argument('-w', '--wordlist', help='wordlist (urllist) file')
     g.add_argument('--stats', metavar='STATS_FILE', default='/tmp/nudecrawler-stats.txt', help='periodical statistics file')
-    g.add_argument('--resume', metavar='STATS_FILE', default='/tmp/nudecrawler-stats.txt', help='resume from STATS_FILE (other args are not needed)')
+    g.add_argument('--resume', metavar='STATS_FILE', help='resume from STATS_FILE (other args are not needed)')
     g.add_argument('--stop', type=int, metavar='NUM_IMAGES', help='stop (or --refresh) after N images processed (or little after)')
     g.add_argument('--refresh', metavar=('SCRIPT', 'ARG'), nargs='+', help='run this refresh script every --stop NUM_IMAGES images')
 
