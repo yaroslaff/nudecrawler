@@ -31,6 +31,17 @@ def detect_image(path, address, thresholds, verbose=False):
             'image': open(path, 'rb')
         }
         r = requests.post(req_url, files=files)
+        if r.status_code == 500:
+            if verbose:                
+                print(r.text)
+            return  0            
+
+        if r.status_code != 200:
+            print(os.getenv('NUDECRAWLER_PAGE_URL'))
+            print(os.getenv('NUDECRAWLER_IMAGE_URL'))
+            print(r.text)
+            print(r.json())
+
     except requests.Timeout as e:
         # timeout: not interesting image
         print("TIMEOUT")

@@ -157,7 +157,16 @@ This list (~300Kb, 11k urls) created from 1.5M words russian wordlist. There are
 
 Now you can use this file as wordlist (nudecrawler will detect it's already base URL, and will only append date to URL). 
 
-## Example usage:
+### Stop/Resume
+When working with worklists an --stats file, current status is periodically saved to this file. When starting again, if stats file exists, nudecrawler will continue from last recording point. To start it from the beginning, delete stats file or use different `--stats filename`.
+
+### Example usage:
+Check one page (using built-in :nude filter):
+~~~
+bin/nudecrawler -v --url1 https://telegra.ph/your-page-address 
+~~~
+
+
 ~~~
 bin/nudecrawler -w urls.txt --nude 5 -d 30 -f 5 --stats .local/mystats.json  --log .local/nudecrawler.log 
 ~~~

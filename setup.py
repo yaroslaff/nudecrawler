@@ -20,7 +20,11 @@ setup(
     scripts=[
     'bin/nudecrawler', 
     'bin/detect-image-aid.py',
-    'bin/detect-url-nsfw-api.py'],
+    'bin/detect-image-nsfw-api.py',
+    'bin/detect-image-nudenet.py',
+    'bin/detect-server-nudenet.py',
+    'bin/refresh-nsfw-api.py'
+    ],
 
     install_requires=['bs4', 'requests', 'pillow', 'nudepy', 'transliterate'],
 

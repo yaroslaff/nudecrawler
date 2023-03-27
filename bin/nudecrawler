@@ -6,6 +6,8 @@ import json
 import time
 import sys
 import os
+import shlex
+import subprocess
 import nudecrawler 
 from nudecrawler import Page, Unbuffered
 from nudecrawler.page import  get_processed_images
@@ -23,6 +25,7 @@ stats = {
     'word': None,
     'url': None,
     'now': None,
+    'processed_images': 0,
     'found_interesting_pages': 0,
     'found_nude_images': 0,
     'resume': dict()
@@ -37,6 +40,8 @@ started = time.time()
 
 logfile = None
 stop_after = None
+stop_each = None
+refresh = None
 detect_image = None
 detect_url = None
 
@@ -90,7 +95,7 @@ video = 1
 verbose = False
 all_found = True
 
-def get_args():
+def get_args(argv=None):
     parser = argparse.ArgumentParser(description='Telegra.ph Spider')
 
     def_total =5
@@ -104,7 +109,6 @@ def get_args():
     parser.add_argument('--url1', metavar="URL", help='process only one url')
     parser.add_argument('-f', '--fails', type=int, default=0, help='stop searching next pages with same words after N failures')
     parser.add_argument('--day', nargs=2, type=int, metavar=('MONTH', 'DAY'), help='Current date (default is today) example: --day 12 31')
-    parser.add_argument('--stop', type=int, metavar='NUM_IMAGES', help='stop after N images processed (or little after)')
 
 
     g = parser.add_argument_group('Image filtering options')
@@ -123,14 +127,19 @@ def get_args():
 
     g = parser.add_argument_group('list-related options')
     g.add_argument('-w', '--wordlist', help='wordlist (urllist) file')
-    g.add_argument('--stats', default='/tmp/nudecrawler-stats.txt', help='periodical statistics file')
+    g.add_argument('--stats', metavar='STATS_FILE', default='/tmp/nudecrawler-stats.txt', help='periodical statistics file')
+    g.add_argument('--resume', metavar='STATS_FILE', default='/tmp/nudecrawler-stats.txt', help='resume from STATS_FILE (other args are not needed)')
+    g.add_argument('--stop', type=int, metavar='NUM_IMAGES', help='stop (or --refresh) after N images processed (or little after)')
+    g.add_argument('--refresh', metavar=('SCRIPT', 'ARG'), nargs='+', help='run this refresh script every --stop NUM_IMAGES images')
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 
 
 def analyse(url):
+
+    global stop_after
 
     p = Page(url, neednnudes=nude, neednvideo=video, all_found=all_found,
             detect_url=detect_url, detect_image=detect_image)
@@ -154,8 +163,16 @@ def analyse(url):
 
     save_stats(force=True)
     if stop_after is not None and get_processed_images() > stop_after:
-        print("Stopping after processed", get_processed_images(), "images")
-        sys.exit(2)
+        print("Stop/refresh after processed", get_processed_images(), "images...")
+        if refresh:
+            # print("Refresh:", refresh)
+            subprocess.run(refresh)
+
+            # schedule next stop
+            stop_after = get_processed_images() + stop_each
+        else:
+            print("No --refresh, exiting with code 2")
+            sys.exit(2)
 
     return p
 
@@ -169,6 +186,7 @@ def save_stats(force=False):
     if time.time() > stats_next_write or force:
         stats['now'] = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S")
         stats['uptime'] = int(time.time() - started)
+        stats['processed_images'] = get_processed_images()
         
         with open(stats_file, "w") as fh:
             json.dump(stats, fh, indent=4)
@@ -230,14 +248,19 @@ def sanity_check(args):
 
 def main():
     global nude, video, verbose, all_found, stats_file, stats, logfile, \
-        stop_after, detect_image, detect_url, page_image_minsize, page_extensions, \
-        page_mintotal
+        stop_after, stop_each, detect_image, detect_url, page_image_minsize, page_extensions, \
+        page_mintotal, refresh
 
     words = None
     args = get_args()
+    if args.resume:
+        print("Resume from", args.resume)
+        with open(args.resume) as fh:
+            stats = json.load(fh)
+            cmd = stats['cmd']
+            args = get_args(shlex.split(cmd)[1:])
 
     sanity_check(args)
-
 
     nude = args.nude
     video = args.video
@@ -246,6 +269,8 @@ def main():
     matched_resume = False
     skipped_words = 0
     stop_after = args.stop
+    stop_each = args.stop
+    refresh = args.refresh
     detect_url = args.detect_url
     detect_image = args.detect_image
 
