@@ -2,7 +2,6 @@
 from bs4 import BeautifulSoup
 import urllib.request
 from urllib.parse import urljoin
-from tqdm import tqdm
 from .remoteimage import RemoteImage
 from .verbose import get_verbose
 from .exceptions import *
