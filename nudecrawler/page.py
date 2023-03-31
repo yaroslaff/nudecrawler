@@ -61,8 +61,7 @@ class Page:
             self.error = True
             self.error_reason = f'Exception {e} with {self.url}'
             return
-
-        self.contentlength = int(page.headers['content-length'])
+        self.contentlength = page.headers.get('content-length')
 
         self.soup = BeautifulSoup(page, "html.parser")
 

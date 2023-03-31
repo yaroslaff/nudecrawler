@@ -23,12 +23,16 @@ stats = {
     'urls': 0,
     'words': 0,
     'word': None,
-    'last_url': None,
-    'last_url_status': None,
-    'last_url_status_detailed': None,
-    'last_interesting_url': None,
-    'last_interesting_url_status': None,
-    'last_interesting_url_status_detailed': None,
+    'last': {
+        'url': None,
+        'status': None,
+        'detailed': None,
+    },
+    'last_interesting': {
+        'url': None,
+        'status': None,
+        'detailed': None,
+    },
     'now': None,
     'processed_images': 0,
     'found_interesting_pages': 0,
@@ -157,17 +161,17 @@ def analyse(url):
     if p.error:
         return p
     p.check_all()
-    stats['last_url'] = url
-    stats['last_url_status'] = p._status
-    stats['last_url_status_detailed'] = p._status_detailed
+    stats['last']['url'] = url
+    stats['last']['status'] = p._status
+    stats['last']['detailed'] = p._status_detailed
 
 
     if p.status().startswith('INTERESTING'):
         stats['found_interesting_pages'] += 1
         stats['found_nude_images'] += p.nude_images
-        stats['last_interesting_url'] = url
-        stats['last_interesting_url_status'] = p._status
-        stats['last_interesting_url_status_detailed'] = p._status_detailed
+        stats['last_interesting']['url'] = url
+        stats['last_interesting']['status'] = p._status
+        stats['last_interesting']['detailed'] = p._status_detailed
 
         if logfile:
             with open(logfile, "a") as fh:
@@ -207,6 +211,7 @@ def save_stats(force=False):
 
 
 def check_word(word, day, fails, print_urls=False, resumecount=None):
+
     word = word.replace(' ','-').translate({ord('ь'): '', ord('ъ'): ''})
 
     if word.startswith("https://"):
