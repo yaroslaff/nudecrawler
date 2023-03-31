@@ -312,17 +312,14 @@ def main():
             sys.exit(1)
 
         if kind == 'builtin':
-            detect_image=basename
+            detect_image = basename
         elif kind == 'image':
             detect_image = basename
             print(f"# Will use script {shutil.which(basename)} for filtering images")
         elif kind == 'url':
             detect_url = basename
             print(f"# Will use script {shutil.which(basename)} for filtering images")            
-
-        
-
-
+    
     # fix arguments
     if not any([detect_image, detect_url, all_found]):
         print("# No filter, using built-in :nude by default")
