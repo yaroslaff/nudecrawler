@@ -46,7 +46,7 @@ NudeCrawler can work with different nudity detectors and very easy to extend. Op
 
 Bult-in filter `:nude` based on [nude.py](https://github.com/hhatto/nude.py), (python port of [nude.js](https://github.com/pa7/nude.js)) is mostly good and used by default (and does not needs to install many dependecties as with keras/tensorflow detectors, which better to use as Docker images), but it's slower
 
-There are two options to connect third-party filters, `--detect-image SCRIPT` and `--detect-url SCRIPT`, first one will call script and pass it filename of downloaded image to analyse, and second one will call script and pass it URL of image to analyse. Script should return with either 0 return code (image is SFW) or 1 (image is NSFW). Mnemonic: return code is number of *interesting* images. 
+There are two options to connect user filters, `--detect-image SCRIPT` and `--detect-url SCRIPT`, first one will call script and pass it filename of downloaded image to analyse, and second one will call script and pass it URL of image to analyse. Script should return with either 0 return code (image is SFW) or 1 (image is NSFW). Mnemonic: return code is number of *interesting* images. 
 
 if you will use `/bin/true` as script, it will detect all images as nude, and `/bin/false` will detect all images as non-nude.
 
@@ -61,7 +61,7 @@ Start:
 sudo docker run --rm --name nsfw-api -d -p 3000:3000 ghcr.io/arnidan/nsfw-api:latest
 ~~~
 
-Use option `--detect-image PATH_TO/detect-url-nsfw-api.py` (PATH_TO  is usually /usr/local/bin if you installed with `pip3 install nudecrawler`)
+Use option `--detect nsfwapi`
 
 This detector understands DETECTOR_VERBOSE, and special threshold for each of NSFW classes (porn, sexy, hentai),
 also, DETECTOR_THRESHOLD sets default threshold for all classes.
@@ -77,7 +77,7 @@ To use [adult-image-detector](https://github.com/open-dating/adult-image-detecto
 sudo docker run --rm -d -p 9191:9191 --name aid --memory=1G opendating/adult-image-detector
 ~~~
 
-And use option `--detect-image PATH-TO/detect-image-aid.py` (usually: `/usr/local/bin/aid.py`)
+And use option `--detect aid`
 
 adult-image-detector works good and fast for me, but has memory leaking so needs more and more RAM. It's good for short-time run
 
@@ -90,8 +90,9 @@ Right way workaround is simple - after you will install NudeNet download model *
 
 Or you can download from my temporary site: `wget https://nudecrawler.netlify.app/classifier_model.onnx` (But I cannot promise it will be there forever) and put it to ~/.NudeNet .
 
+
 #### Using NudeNet with NudeCrawler
-[NudeNet](https://github.com/notAI-tech/NudeNet) filtering is implemented as client-server. Start server (PATH_TO/detect-server-nudenet.py) on other terminal (or screen/tmux) and add option `--detect-image PATH_TO/detect-image-nudenet.py` to NudeCrawler.
+[NudeNet](https://github.com/notAI-tech/NudeNet) filtering is implemented as client-server. Start server (PATH_TO/detect-server-nudenet.py) on other terminal (or screen/tmux) and add option `--detect nudenet` to NudeCrawler.
 
 ### Writing your own detector
 If you want to write your own detector, explore current detector scripts as example, but here is main rules:
