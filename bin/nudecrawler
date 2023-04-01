@@ -13,6 +13,7 @@ import nudecrawler
 from nudecrawler import Page, Unbuffered
 from nudecrawler.page import  get_processed_images
 from nudecrawler.version import version
+from nudecrawler.cache import cache
 
 import transliterate.discover 
 from transliterate.base import TranslitLanguagePack, registry
@@ -39,7 +40,9 @@ stats = {
     'processed_images': 0,
     'found_interesting_pages': 0,
     'found_nude_images': 0,
-    'resume': dict()
+    'resume': dict(),
+    'gap_max': 0,
+    'gap_url': None
 }
 
 stats_file = None
@@ -217,6 +220,8 @@ def save_stats(force=False):
         stats['uptime'] = int(time.time() - started)
         stats['processed_images'] = get_processed_images()
         
+        stats['cache'] = cache.status()
+
         with open(stats_file, "w") as fh:
             json.dump(stats, fh, indent=4)
             stats_next_write = time.time() + stats_period
@@ -239,7 +244,7 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
 
     stats['resume']['month'] = day.month
     stats['resume']['day'] = day.day    
-    stats['resume']['count'] = None
+    stats['resume']['count'] = resumecount
 
     if print_urls:
         print(url)
@@ -265,7 +270,12 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
         if p.error:
             nfails += 1
         else:
+            # end of gap
+            if nfails>stats['gap_max']:
+                stats['gap_max'] = nfails
+                stats['gap_url'] = url
             nfails=0
+
         c+=1
         stats['resume']['count'] = c
 
@@ -412,3 +422,4 @@ if __name__ == '__main__':
         main()
     except KeyboardInterrupt as e:
         print(e)
+        save_stats(force=True)

@@ -188,16 +188,13 @@ Work verbosely (-v), use NSFW_API for resolving (and call refresh-nsfw-api.sh sc
 
 ## Options
 ~~~
-usage: nudecrawler [-h] [-d DAYS] [--nude N] [--total N] [--video N]
-                   [--url1 URL] [-f FAILS] [--day MONTH DAY] [-a]
-                   [--detect-image DETECT_IMAGE] [--detect-url DETECT_URL]
-                   [--extensions [EXTENSIONS ...]] [--minsize MINSIZE] [-v]
-                   [--unbuffered] [--urls] [--log LOG] [-w WORDLIST]
-                   [--stats STATS_FILE] [--resume STATS_FILE]
-                   [--stop NUM_IMAGES] [--refresh SCRIPT [ARG ...]]
+$ nudecrawler -h
+usage: nudecrawler [-h] [-d DAYS] [--nude N] [--total N] [--video N] [--url1 URL] [-f FAILS] [--day MONTH DAY] [-a] [--detect-image SCRIPT] [--detect-url SCRIPT] [--detect METHOD]
+                   [--extensions [EXTENSIONS ...]] [--minsize MINSIZE] [-v] [--unbuffered] [--urls] [--log LOG] [-w WORDLIST] [--stats STATS_FILE] [--resume STATS_FILE] [--stop NUM_IMAGES]
+                   [--refresh SCRIPT [ARG ...]]
                    [words ...]
 
-Telegra.ph Spider
+Nudecrawler: Telegra.ph Spider 0.2.0
 
 positional arguments:
   words
@@ -210,16 +207,15 @@ optional arguments:
   --video N             Interesting if N+ video
   --url1 URL            process only one url
   -f FAILS, --fails FAILS
-                        stop searching next pages with same words after N
-                        failures
+                        stop searching next pages with same words after N failures
   --day MONTH DAY       Current date (default is today) example: --day 12 31
 
 Image filtering options:
   -a, --all             do not detect, print all found pages
-  --detect-image DETECT_IMAGE
-                        script to detect nudity on image file
-  --detect-url DETECT_URL
-                        script to detect nudity on image URL
+  --detect-image SCRIPT
+                        explicitly use this script to detect nudity on image file
+  --detect-url SCRIPT   explicitly use this script to detect nudity on image URL
+  --detect METHOD       One of nudepy, aid, nsfwapi, nudenet
   --extensions [EXTENSIONS ...]
                         interesting extensions (with dot, like .jpg)
   --minsize MINSIZE     min size of image in Kb (10)
@@ -235,8 +231,7 @@ list-related options:
                         wordlist (urllist) file
   --stats STATS_FILE    periodical statistics file
   --resume STATS_FILE   resume from STATS_FILE (other args are not needed)
-  --stop NUM_IMAGES     stop (or --refresh) after N images processed (or
-                        little after)
+  --stop NUM_IMAGES     stop (or --refresh) after N images processed (or little after)
   --refresh SCRIPT [ARG ...]
                         run this refresh script every --stop NUM_IMAGES images
 ~~~

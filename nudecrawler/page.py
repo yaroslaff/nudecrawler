@@ -5,7 +5,9 @@ from urllib.parse import urljoin
 from .remoteimage import RemoteImage
 from .verbose import get_verbose
 from .exceptions import *
+from .cache import cache
 import requests
+import hashlib
 import http
 
 from urllib.parse import urlparse
@@ -21,6 +23,16 @@ processed_images = 0
 
 def get_processed_images():
     return processed_images
+
+def sha1sum(path):
+    sum = hashlib.sha1()
+    with open(path, 'rb') as source:
+        block = source.read(2**16)
+        while len(block) != 0:
+            sum.update(block)
+            block = source.read(2**16)
+    return sum.hexdigest()
+
 
 class Page:
 
@@ -128,10 +140,19 @@ class Page:
         
 
     def is_nude(self, url):
-        # check extension
-
         os.environ["NUDECRAWLER_PAGE_URL"] = self.url
         os.environ["NUDECRAWLER_IMAGE_URL"] = url
+
+        verdict = cache.url2v(url)
+
+        if verdict is not None:
+            if verdict:
+                self.log(f"{url} is nude (cached url)")
+                self.nude_images += 1
+            else:
+                self.log(f"{url} is NOT nude (cached url)")
+                self.nonnude_images += 1
+            return verdict
 
         if self.detect_url:
             rc = subprocess.run([self.detect_url, url])
@@ -150,7 +171,22 @@ class Page:
         if self.detect_image:
             try:
                 ri = RemoteImage(url)
-                if ri.detect_image(self.detect_image):
+                sum = sha1sum(ri.path)
+                verdict = cache.sum2v(sum)
+                if verdict is not None:
+                    if verdict:
+                        self.log(f"{url} is nude (cached sum)")
+                        self.nude_images += 1
+                    else:
+                        self.log(f"{url} is NOT nude (cached sum)")
+                        self.nonnude_images += 1
+
+                    return verdict
+
+                verdict = ri.detect_image(self.detect_image)
+                self.log(f"register verdict {verdict} {url} {sum}")
+                cache.register(url, sum, verdict)
+                if verdict:
                     self.log(f"{url} is nude")
                     self.nude_images += 1
                 else:
