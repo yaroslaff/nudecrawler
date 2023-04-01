@@ -109,6 +109,18 @@ class Page:
             self.videos.append(src)
 
     def prefilter_image(self, url):
+
+        verdict = cache.url2v(url)
+
+        if verdict is not None:
+            if verdict:
+                self.log(f"{url} is nude (cached url)")
+                self.nude_images += 1
+            else:
+                self.log(f"{url} is NOT nude (cached url)")
+                self.nonnude_images += 1
+            return verdict
+
         path = urlparse(url).path
         ext = os.path.splitext(path)[1]
         if ext not in self.image_extensions:
@@ -142,17 +154,6 @@ class Page:
     def is_nude(self, url):
         os.environ["NUDECRAWLER_PAGE_URL"] = self.url
         os.environ["NUDECRAWLER_IMAGE_URL"] = url
-
-        verdict = cache.url2v(url)
-
-        if verdict is not None:
-            if verdict:
-                self.log(f"{url} is nude (cached url)")
-                self.nude_images += 1
-            else:
-                self.log(f"{url} is NOT nude (cached url)")
-                self.nonnude_images += 1
-            return verdict
 
         if self.detect_url:
             rc = subprocess.run([self.detect_url, url])
