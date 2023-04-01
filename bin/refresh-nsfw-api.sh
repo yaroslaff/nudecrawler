@@ -8,3 +8,5 @@ sudo docker stop $NAME
 
 echo start new container....
 sudo docker run --rm --name $NAME -d -p 3000:3000 $IMAGE
+sleep 2
+
