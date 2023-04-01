@@ -321,6 +321,11 @@ def main():
             print(f"Do not know detector {args.detect!r}, use one of known detectors: ({ ', '.join(filter_methods.keys()) }) or explicitly specify script with --detect-image or --detect-url")
             sys.exit(1)
 
+        if kind in ['image', 'url']:
+            if shutil.which(basename) is None:
+                print(f"Cannot find {basename}, maybe not in $PATH?" ,file=sys.stderr)
+                sys.exit(1)
+
         if kind == 'builtin':
             detect_image = basename
         elif kind == 'image':
