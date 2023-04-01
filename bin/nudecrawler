@@ -38,12 +38,15 @@ stats = {
     },
     'now': None,
     'processed_images': 0,
+    'ignored_pages': 0,
     'found_interesting_pages': 0,
     'found_nude_images': 0,
     'resume': dict(),
     'gap_max': 0,
     'gap_url': None
 }
+
+previous_content_length = None
 
 stats_file = None
 stats_period = 60
@@ -163,10 +166,10 @@ def get_args(argv=None):
 
 def analyse(url):
 
-    global stop_after
+    global stop_after, previous_content_length
 
     p = Page(url, neednnudes=nude, neednvideo=video, all_found=all_found,
-            detect_url=detect_url, detect_image=detect_image)
+            detect_url=detect_url, detect_image=detect_image, ignore_content_length=previous_content_length)
 
     p.image_minsize = page_image_minsize
     p.image_extensions = page_extensions
@@ -180,6 +183,7 @@ def analyse(url):
     stats['last']['status'] = p._status
     stats['last']['detailed'] = p._status_detailed
 
+    previous_content_length = p.content_length
 
     if p.status().startswith('INTERESTING'):
         stats['found_interesting_pages'] += 1
@@ -192,6 +196,9 @@ def analyse(url):
             with open(logfile, "a") as fh:
                 print(p, file=fh)
         print(p)
+
+    if p.status().startswith("IGNORED"):
+        stats['ignored_pages'] += 1
 
     save_stats(force=False)
     if stop_after is not None and get_processed_images() > stop_after:
@@ -228,7 +235,8 @@ def save_stats(force=False):
 
 
 def check_word(word, day, fails, print_urls=False, resumecount=None):
-
+    global previous_content_length
+    
     word = word.replace(' ','-').translate({ord('ь'): '', ord('ъ'): ''})
 
     if word.startswith("https://"):
@@ -236,6 +244,7 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
     else:
         trans_word = transliterate.translit(word, 'tgru', reversed=True)
         baseurl=f'https://telegra.ph/{trans_word}'
+
 
     stats['word'] = word
     stats['words'] += 1
@@ -249,6 +258,8 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
     if print_urls:
         print(url)
         return
+
+    previous_content_length = None
 
     # r = requests.get(url)  
     if not resumecount:

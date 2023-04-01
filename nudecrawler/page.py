@@ -36,7 +36,7 @@ def sha1sum(path):
 
 class Page:
 
-    def __init__(self, url, neednnudes=1, neednvideo=1, all_found=False, threshold=0.5, detect_image=None, detect_url=None):
+    def __init__(self, url, neednnudes=1, neednvideo=1, all_found=False, threshold=0.5, detect_image=None, detect_url=None, ignore_content_length=None):
         self.url = url
         self.error = False
         self.error_reason = None
@@ -51,11 +51,13 @@ class Page:
         self.images = list()
         self.videos = list()
         self.all_found = all_found
+        self.ignore_content_length = ignore_content_length
+        self.ignore = False # Ignore this page, we think it's spam
 
         self.neednnudes = neednnudes
         self.neednvideo = neednvideo
-        self.threshold = threshold
-        
+        self.threshold = threshold        
+
         self.detect_image = detect_image
         self.detect_url = detect_url
         self.image_extensions = ['.jpg', '.jpeg']
@@ -73,8 +75,18 @@ class Page:
             self.error = True
             self.error_reason = f'Exception {e} with {self.url}'
             return
-        self.contentlength = page.headers.get('content-length')
+        self.content_length = page.headers.get('content-length')
 
+
+        if self.ignore_content_length is not None and self.ignore_content_length == self.content_length:
+            self.ignore = True
+            self._status = f"IGNORED"
+            self._status_detailed = f"Ignore because matches prev page content-length = {self.content_length}"
+            if get_verbose:
+                print("IGNORE", self.url, self._status_detailed)
+            self.log(self._status_detailed)
+            return
+        
         self.soup = BeautifulSoup(page, "html.parser")
 
     def log(self, msg, really=True):
@@ -86,6 +98,10 @@ class Page:
         if self.error:
             print("ERROR, do not check")
             return
+        
+        if self.ignore:
+            return
+
         self.total_images = len(self.soup.findAll('img'))
         self.total_links = len(self.soup.findAll('a'))
 
@@ -239,6 +255,9 @@ class Page:
             self.log(f"ERROR: {self.error_reason}", makelog)            
             self._status = "ERROR"
             return "ERROR"
+
+        if self.ignore:
+            return self._status
 
         self._status_detailed = f"total: {self.total_images} (need: {self.need_total}) nude: {self.nude_images} "\
                     f"({self.neednvideo}) video: {self.total_video} ({self.neednvideo})"
