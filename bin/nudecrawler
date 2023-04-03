@@ -41,6 +41,8 @@ stats = {
     'ignored_pages': 0,
     'found_interesting_pages': 0,
     'found_nude_images': 0,
+    'found_new_nude_images': 0,
+    'found_new_total_images': 0,
     'resume': dict(),
     'gap_max': 0,
     'gap_url': None
@@ -183,7 +185,13 @@ def analyse(url):
     stats['last']['status'] = p._status
     stats['last']['detailed'] = p._status_detailed
 
+    stats['found_new_total_images'] += p.new_total_images
+    stats['found_new_nude_images'] += p.new_nude_images
+
     previous_content_length = p.content_length
+
+
+
 
     if p.status().startswith('INTERESTING'):
         stats['found_interesting_pages'] += 1
@@ -294,6 +302,20 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
 def sanity_check(args):
     pass
 
+def load_stats(path):
+    global stats
+    with open(path) as fh:
+        loaded_stats = json.load(fh)
+    
+    for k in stats:
+        if k not in loaded_stats:
+            loaded_stats[k] = stats[k]
+    
+    stats = loaded_stats
+
+def abort(msg):
+    print(msg, file=sys.stderr)
+    sys.exit(1)
 
 def main():
     global nude, video, verbose, all_found, stats_file, stats, logfile, \
@@ -302,15 +324,24 @@ def main():
 
     words = None
     args = get_args()
-    if args.resume:
-        print("Resume from", args.resume)
-        with open(args.resume) as fh:
-            stats = json.load(fh)
-            cmd = stats['cmd']
-            args = get_args(shlex.split(cmd)[1:])
-
     sanity_check(args)
 
+    # when fastforward, we go to specific word/day/count quickly
+    fastforward = False
+
+    if args.resume:
+        print("Resume from", args.resume)
+        try:
+            load_stats(args.resume)
+        except FileNotFoundError as e: 
+            abort(f"Missing status file {args.resume}")
+
+        cmd = stats['cmd']
+        args = get_args(shlex.split(cmd)[1:])
+        fastforward = True
+    else:
+        stats['cmd'] = ' '.join(sys.argv)
+    
     nude = args.nude
     video = args.video
     verbose = args.verbose
@@ -351,12 +382,7 @@ def main():
         print("# No filter, using built-in :nude by default")
         detect_image=':nude'
 
-    # when fastforward, we go to specific word/day/count quickly
-    fastforward = False
-
     nudecrawler.verbose.verbose = verbose
-
-    stats['cmd'] = ' '.join(sys.argv)
 
     if args.unbuffered:
         sys.stdout = Unbuffered(sys.stdout)
@@ -397,12 +423,12 @@ def main():
 
     logfile = args.log
 
-    if args.stats and os.path.exists(args.stats):
-        with open(args.stats) as fh:
-            stats = json.load(fh)
-            fastforward = True
+    #if args.stats and os.path.exists(args.stats):
+    #    with open(args.stats) as fh:
+    #        stats = json.load(fh)
+    #        fastforward = True
 
-    for w in words:        
+    for w in words:
         if fastforward and not matched_resume:
             if w == stats['resume']['word']:
                 matched_resume = True
@@ -432,6 +458,10 @@ def main():
             
             days_tried += 1
             day = day - datetime.timedelta(days=1)
+
+    print(f"Finished all {len(words)} (skipped {skipped_words})")
+    if not matched_resume:
+        abort(f"Did not found word {stats['resume']['word']}")
 
 if __name__ == '__main__':
     try:

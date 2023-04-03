@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import urllib.request
 from urllib.parse import urljoin
 from .remoteimage import RemoteImage
-from .verbose import get_verbose
+from .verbose import printv
 from .exceptions import *
 from .cache import cache
 import requests
@@ -43,8 +43,14 @@ class Page:
         self.nban_links = 0
         self.nban_images = 0
         self.nude_images = 0
-        self.nonnude_images = 0
+        self.nonnude_images = 0        
         self.total_images = 0
+
+        # images not found in cache
+        self.new_nude_images = 0
+        self.new_nonnude_images = 0        
+        self.new_total_images = 0
+
         self.total_video = 0
         self.text_found = list()
         self.links = list()        
@@ -52,7 +58,7 @@ class Page:
         self.videos = list()
         self.all_found = all_found
         self.ignore_content_length = ignore_content_length
-        self.ignore = False # Ignore this page, we think it's spam
+        self.ignore = False # Ignore this page, we think it's spam, duplicate
 
         self.neednnudes = neednnudes
         self.neednvideo = neednvideo
@@ -69,6 +75,8 @@ class Page:
         self._status_logged = False
         self._log = list()
 
+        printv(self.url)
+
         try:
             page = urllib.request.urlopen(self.url)
         except (urllib.error.URLError, ConnectionError, http.client.RemoteDisconnected) as e:
@@ -82,8 +90,7 @@ class Page:
             self.ignore = True
             self._status = f"IGNORED"
             self._status_detailed = f"Ignore because matches prev page content-length = {self.content_length}"
-            if get_verbose:
-                print("IGNORE", self.url, self._status_detailed)
+            printv(f"IGNORE {self.url}, {self._status_detailed}")
             self.log(self._status_detailed)
             return
         
@@ -105,18 +112,13 @@ class Page:
         self.total_images = len(self.soup.findAll('img'))
         self.total_links = len(self.soup.findAll('a'))
 
-        if get_verbose():
-            print(self.url)
-
         self.check_images()
         self.check_video()
     
         # set status
         self.status()
 
-        if get_verbose():
-            # print quick summary
-            print("  ", self._status, self._status_detailed)
+        printv(self._status, self._status_detailed)
 
     def check_video(self):
         self.total_video = len(self.soup.findAll('video'))
@@ -202,6 +204,13 @@ class Page:
 
                 verdict = ri.detect_image(self.detect_image)
                 self.log(f"register verdict {verdict} {url} {sum}")
+                self.new_total_images += 1
+
+                if verdict:
+                    self.new_nude_images += 1
+                else:
+                    self.new_nonnude_images += 1
+
                 cache.register(url, sum, verdict)
                 if verdict:
                     self.log(f"{url} is nude")
@@ -234,9 +243,6 @@ class Page:
             return
 
         if not self.all_found:
-            #for url in tqdm(image_list, 
-            #        ascii=" **", desc=self.url, disable=not get_verbose()):
-
             for url in image_list:
                 self.is_nude(url)
                 processed_images += 1
@@ -259,7 +265,8 @@ class Page:
         if self.ignore:
             return self._status
 
-        self._status_detailed = f"total: {self.total_images} (need: {self.need_total}) nude: {self.nude_images} "\
+        self._status_detailed = f"total: {self.total_images} (need: {self.need_total}) new_total: {self.new_total_images} " \
+                    f"nude: {self.nude_images} new_nude: {self.new_nude_images}" \
                     f"({self.neednvideo}) video: {self.total_video} ({self.neednvideo})"
         
         self.log(self._status_detailed, makelog)
