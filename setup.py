@@ -35,7 +35,11 @@ setup(
     long_description_content_type='text/markdown',
     author_email='yaroslaff@gmail.com',
     description='Crawl telegra.ph for nude pictures and videos',
-    python_requires='>=3.6',
+    python_requires='>=3.9',
+    extras_require={
+        'nudenet': ["flask", "nudenet", "python-daemon"],
+    },
+
     classifiers=[
         'Development Status :: 3 - Alpha',
 
