@@ -9,7 +9,7 @@ import argparse
 from PIL import UnidentifiedImageError
 
 
-classifier = NudeClassifier()
+classifier = None
 
 app = Flask(__name__)
 
@@ -81,9 +81,13 @@ def sanity_check():
 
 
 def main():
+    global classifier
     args = get_args()
     if not sanity_check():
         sys.exit(1)
+
+    classifier = NudeClassifier()
+    
     if args.daemon:
         with daemon.DaemonContext():
             app.run(port=args.port)

@@ -88,7 +88,7 @@ adult-image-detector works good and fast for me, but has memory leaking so needs
 ### detector: NudeNet
 
 #### Installing NudeNet (little trick needed)
-Using NudeNet does not requires docker, but you need to install `pip3 install -U flask nudenet` (consider using virtualenv, because nudenet has many dependencies). Also, NudeNet requires model in file `~/.NudeNet/classifier_model.onnx`, if file is missing, NudeNet (unsuccessfully) *tries* to download file from https://github.com/notAI-tech/NudeNet/releases/download/v0/classifier_model.onnx but there is problem, github may display warning page instead of real .onnx file, so this page is downloaded (which is certainly wrong).
+Using NudeNet does not requires docker, but you need to install `pip3 install -U flask nudenet python-daemon` (consider using virtualenv, because nudenet has many dependencies). Also, NudeNet requires model in file `~/.NudeNet/classifier_model.onnx`, if file is missing, NudeNet (unsuccessfully) *tries* to download file from https://github.com/notAI-tech/NudeNet/releases/download/v0/classifier_model.onnx but there is problem, github may display warning page instead of real .onnx file, so this page is downloaded (which is certainly wrong).
 
 Right way workaround is simple - after you will install NudeNet download model *manually* (no wget!) and place it to `~/.NudeNet/`
 
