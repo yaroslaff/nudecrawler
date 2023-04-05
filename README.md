@@ -40,6 +40,10 @@ INTERESTING https://telegra.ph/sasha-grey-XXXXX
   Nude: 6 non-nude: 3
 ~~~
 
+## Getting only interesting results
+Nudecrawler uses [evalidate](https://github.com/yaroslaff/evalidate) to filter results with python expression (`--expr`). With `-h` help will list all avaliable variables, like: `total_images nude_images nonnude_images new_nude_images new_nonnude_images new_total_images total_video`.
+Default value: `(total_images>5 and new_nude_images>0) or total_video>0`.
+
 ## Working with different nudity detectors
 
 NudeCrawler can work with different nudity detectors and very easy to extend. Option `-a`/`--all` will disable detection totally, and it will report all pages.
@@ -191,12 +195,13 @@ Work verbosely (-v), use NSFW_API for resolving (and call refresh-nsfw-api.sh sc
 ## Options
 ~~~
 $ nudecrawler -h
-usage: nudecrawler [-h] [-d DAYS] [--nude N] [--total N] [--video N] [--url1 URL] [-f FAILS] [--day MONTH DAY] [-a] [--detect-image SCRIPT] [--detect-url SCRIPT] [--detect METHOD]
-                   [--extensions [EXTENSIONS ...]] [--minsize MINSIZE] [-v] [--unbuffered] [--urls] [--log LOG] [-w WORDLIST] [--stats STATS_FILE] [--resume STATS_FILE] [--stop NUM_IMAGES]
-                   [--refresh SCRIPT [ARG ...]]
+usage: nudecrawler [-h] [-d DAYS] [--url1 URL] [-f FAILS] [--day MONTH DAY] [--expr EXPR] [--total N] [--max-errors N] [--min-content-length N] [-a] [--detect-image SCRIPT]
+                   [--detect-url SCRIPT] [--detect METHOD] [--extensions [EXTENSIONS ...]] [--minsize MINSIZE] [--cache PATH] [-v] [--unbuffered] [--urls] [--log LOG] [-w WORDLIST]
+                   [--stats STATS_FILE] [--resume STATS_FILE] [--stop NUM_IMAGES] [--refresh SCRIPT [ARG ...]]
                    [words ...]
 
-Nudecrawler: Telegra.ph Spider 0.2.0
+Nudecrawler: Telegra.ph Spider 0.3.0
+https://github.com/yaroslaff/nudecrawler
 
 positional arguments:
   words
@@ -204,23 +209,27 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -d DAYS, --days DAYS
-  --nude N              Interesting if N+ nude images
-  --total N             Interesting if N+ total images (5)
-  --video N             Interesting if N+ video
   --url1 URL            process only one url
   -f FAILS, --fails FAILS
                         stop searching next pages with same words after N failures
   --day MONTH DAY       Current date (default is today) example: --day 12 31
+  --expr EXPR, -e EXPR  Interesting if EXPR is True. def: '(total_images>5 and new_nude_images>0) or total_video>0'
+                        Fields: total_images nude_images nonnude_images new_nude_images new_nonnude_images new_total_images total_video
+  --total N             Boring if less then N total images (5)
+  --max-errors N        Max allowed errors on page ()
+  --min-content-length N
+                        Interesting if N+ total images (5)
 
 Image filtering options:
   -a, --all             do not detect, print all found pages
   --detect-image SCRIPT
                         explicitly use this script to detect nudity on image file
   --detect-url SCRIPT   explicitly use this script to detect nudity on image URL
-  --detect METHOD       One of nudepy, aid, nsfwapi, nudenet
+  --detect METHOD       One of true, false, nudepy, aid, nsfwapi, nudenet
   --extensions [EXTENSIONS ...]
                         interesting extensions (with dot, like .jpg)
   --minsize MINSIZE     min size of image in Kb (10)
+  --cache PATH          path to cache file (will create if missing)
 
 Output options:
   -v, --verbose         verbose
