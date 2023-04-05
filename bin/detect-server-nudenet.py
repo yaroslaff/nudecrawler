@@ -67,7 +67,7 @@ def sanity_check():
     path = os.path.expanduser('~/.NudeNet/classifier_model.onnx')
 
     if not os.path.exists(path):
-        print_help(f"Missing {path}\n", file=sys.stderr)
+        print_help(f"Missing {path}\n")
         return False
 
     sz = os.stat(path).st_size
@@ -87,7 +87,7 @@ def main():
         sys.exit(1)
 
     classifier = NudeClassifier()
-    
+
     if args.daemon:
         with daemon.DaemonContext():
             app.run(port=args.port)
