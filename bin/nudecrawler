@@ -11,17 +11,26 @@ import shutil
 import subprocess
 import nudecrawler 
 from nudecrawler import Page, Unbuffered
-from nudecrawler.page import  get_processed_images
+from nudecrawler.page import  get_processed_images, context_fields
 from nudecrawler.version import version
 from nudecrawler.cache import cache
+from nudecrawler.verbose import printv
+import nudecrawler.tgru
 
 import transliterate.discover 
-from transliterate.base import TranslitLanguagePack, registry
 
 transliterate.discover.autodiscover()
 
 stats = {
     'cmd': None,
+    'filter': {
+        'expr': 'True',
+        'min_image_size': None,
+        'min_total_images': 0,
+        'min_content_length': None,
+        'image_extensions': None,        
+        'max_errors': None
+    },
     'uptime': 0,
     'urls': 0,
     'words': 0,
@@ -36,6 +45,8 @@ stats = {
         'status': None,
         'detailed': None,
     },
+    
+
     'now': None,
     'processed_images': 0,
     'ignored_pages': 0,
@@ -45,7 +56,8 @@ stats = {
     'found_new_total_images': 0,
     'resume': dict(),
     'gap_max': 0,
-    'gap_url': None
+    'gap_url': None,
+    'cache_path': None
 }
 
 previous_content_length = None
@@ -64,50 +76,10 @@ refresh = None
 detect_image = None
 detect_url = None
 
-page_extensions = None
-page_image_minsize = 10000
-page_mintotal = 0
+#
+# page_mintotal = 0
 
-class TgRuLanguagePack(TranslitLanguagePack):
-    language_code = "tgru"
-    language_name = "tgru"
-
-    character_ranges = ((0x0400, 0x04FF), (0x0500, 0x052F))
-
-    mapping = (
-        u"abvgdezijklmnoprstufhcC'y'ABVGDEZIJKLMNOPRSTUFH'Y'",
-        u"абвгдезийклмнопрстуфхцЦъыьАБВГДЕЗИЙКЛМНОПРСТУФХЪЫЬ",
-    )
-
-    #reversed_specific_mapping = (
-    #    u"ъьЪЬ",
-    #    u"''''"
-    #)
-
-    pre_processor_mapping = {
-        u"zh": u"ж",
-        "yo": 'ё',
-        u"ts": u"ц",
-        u"ch": u"ч",
-        u"sh": u"ш",
-        u"sch": u"щ",
-        u"yu": u"ю",
-        u"ya": u"я",
-        "Yo": 'Ё',
-        u"Zh": u"Ж",
-        u"Ts": u"Ц",
-        u"Ch": u"Ч",
-        u"Sh": u"Ш",
-        u"Sch": u"Щ",
-        u"Yu": u"Ю",
-        u"Ja": u"Я",
-        u"EH": u"Э",
-        u"eh": u"э"
-    }
-
-
-registry.register(TgRuLanguagePack)
-
+expr = 'True'
 
 nude = 1
 video = 1
@@ -115,6 +87,8 @@ verbose = False
 all_found = True
 
 filter_methods = {
+    "true": ("builtin", ":true"),
+    "false": ("builtin", ":false"),
     "nudepy": ("builtin", ":nude"),
     "aid": ("image", "detect-image-aid.py"),
     "nsfwapi": ("image", "detect-image-nsfw-api.py"),
@@ -122,7 +96,9 @@ filter_methods = {
 }
 
 def get_args(argv=None):
-    parser = argparse.ArgumentParser(description=f'Nudecrawler: Telegra.ph Spider {version}')
+    parser = argparse.ArgumentParser(description=f'Nudecrawler: Telegra.ph Spider {version}\nhttps://github.com/yaroslaff/nudecrawler', formatter_class=argparse.RawTextHelpFormatter)
+
+    def_expr = '(total_images>5 and new_nude_images>0) or total_video>0'
 
     def_total =5
     def_minsize=10
@@ -131,13 +107,18 @@ def get_args(argv=None):
 
     parser.add_argument('words', nargs='*')
     parser.add_argument('-d', '--days', type=int, default=30)
-    parser.add_argument('--nude', metavar='N', type=int, default=1, help='Interesting if N+ nude images')
-    parser.add_argument('--total', metavar='N', type=int, default=5, help=f'Interesting if N+ total images ({def_total})')
-    parser.add_argument('--video', metavar='N', type=int, default=1, help='Interesting if N+ video')
+    # parser.add_argument('--nude', metavar='N', type=int, default=1, help='Interesting if N+ nude images')
+    # parser.add_argument('--video', metavar='N', type=int, default=1, help='Interesting if N+ video')
     parser.add_argument('--url1', metavar="URL", help='process only one url')
-    parser.add_argument('-f', '--fails', type=int, default=0, help='stop searching next pages with same words after N failures')
+    parser.add_argument('-f', '--fails', type=int, default=5, help='stop searching next pages with same words after N failures')
     parser.add_argument('--day', nargs=2, type=int, metavar=('MONTH', 'DAY'), help='Current date (default is today) example: --day 12 31')
 
+    g = parser.add_argument_group('Page filtering options')
+    parser.add_argument('--expr', '-e', metavar='EXPR', default=def_expr, 
+                        help=f'Interesting if EXPR is True. def: {def_expr!r}\nFields: ' + ' '.join(context_fields) )
+    parser.add_argument('--total', metavar='N', type=int, default=5, help=f'Boring if less then N total images ({def_total})')
+    parser.add_argument('--max-errors', metavar='N', type=int, default=5, help=f'Max allowed errors on page ()')
+    parser.add_argument('--min-content-length', metavar='N', type=int, default=None, help=f'Interesting if N+ total images ({def_total})')
 
     g = parser.add_argument_group('Image filtering options')
     g.add_argument('-a', '--all', default=False, action='store_true', help='do not detect, print all found pages')
@@ -146,6 +127,7 @@ def get_args(argv=None):
     g.add_argument('--detect', metavar='METHOD', help=f'One of {methods_list}')
     g.add_argument('--extensions', nargs='*', default=['.jpeg','.jpg', '.png'],help='interesting extensions (with dot, like .jpg)')
     g.add_argument('--minsize', type=int, default=def_minsize,help=f'min size of image in Kb ({def_minsize})')
+    g.add_argument('--cache', metavar='PATH', help=f'path to cache file (will create if missing)')
 
     g = parser.add_argument_group('Output options')
     g.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
@@ -170,17 +152,18 @@ def analyse(url):
 
     global stop_after, previous_content_length
 
-    p = Page(url, neednnudes=nude, neednvideo=video, all_found=all_found,
-            detect_url=detect_url, detect_image=detect_image, ignore_content_length=previous_content_length)
-
-    p.image_minsize = page_image_minsize
-    p.image_extensions = page_extensions
+    p = Page(url, all_found=all_found,
+            detect_url=detect_url, detect_image=detect_image, ignore_content_length=previous_content_length,
+            min_images_size=stats['filter']['min_image_size'], 
+            image_extensions = stats['filter']['image_extensions'],
+            min_total_images=stats['filter']['min_total_images'],
+            max_errors=stats['filter']['max_errors'],
+            expr = stats['filter']['expr'], min_content_length=stats['filter']['min_content_length'])
 
     stats['urls'] += 1
-
-    if p.error:
-        return p
+    
     p.check_all()
+    
     stats['last']['url'] = url
     stats['last']['status'] = p._status
     stats['last']['detailed'] = p._status_detailed
@@ -190,10 +173,7 @@ def analyse(url):
 
     previous_content_length = p.content_length
 
-
-
-
-    if p.status().startswith('INTERESTING'):
+    if p.status().startswith('INTERESTING'):        
         stats['found_interesting_pages'] += 1
         stats['found_nude_images'] += p.nude_images
         stats['last_interesting']['url'] = url
@@ -203,12 +183,18 @@ def analyse(url):
         if logfile:
             with open(logfile, "a") as fh:
                 print(p, file=fh)
+    
+    if p.status().startswith("INTERESTING") or verbose:
         print(p)
 
     if p.status().startswith("IGNORED"):
         stats['ignored_pages'] += 1
 
     save_stats(force=False)
+
+    if stats['cache_path']:
+        cache.save_conditional(stats['cache_path'])
+
     if stop_after is not None and get_processed_images() > stop_after:
         print("Stop/refresh after processed", get_processed_images(), "images...")
         if refresh:
@@ -241,10 +227,12 @@ def save_stats(force=False):
             json.dump(stats, fh, indent=4)
             stats_next_write = time.time() + stats_period
 
+    
+
 
 def check_word(word, day, fails, print_urls=False, resumecount=None):
     global previous_content_length
-    
+
     word = word.replace(' ','-').translate({ord('ь'): '', ord('ъ'): ''})
 
     if word.startswith("https://"):
@@ -269,24 +257,25 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
 
     previous_content_length = None
 
+
     # r = requests.get(url)  
     if not resumecount:
         p = analyse(url)
-        if p.error:
-            return
+        #if p.ignore:
+        #    return
         c=2
     else:
         c=resumecount
         print(f"Resume from word {word} count {c}")
+    
+    
 
-    nfails=0
-    while nfails<fails:
-
-
-        url=f'{baseurl}-{day.month:02}-{day.day:02}-{c}'
+    nfails=0    
+    while nfails<fails:        
+        url=f'{baseurl}-{day.month:02}-{day.day:02}-{c}'        
         p = analyse(url)
 
-        if p.error:
+        if p.http_code == 404:
             nfails += 1
         else:
             # end of gap
@@ -319,8 +308,8 @@ def abort(msg):
 
 def main():
     global nude, video, verbose, all_found, stats_file, stats, logfile, \
-        stop_after, stop_each, detect_image, detect_url, page_image_minsize, page_extensions, \
-        page_mintotal, refresh
+        stop_after, stop_each, detect_image, detect_url,\
+        refresh
 
     words = None
     args = get_args()
@@ -342,8 +331,8 @@ def main():
     else:
         stats['cmd'] = ' '.join(sys.argv)
     
-    nude = args.nude
-    video = args.video
+    # nude = args.nude
+    # video = args.video
     verbose = args.verbose
     all_found = args.all    
     matched_resume = False
@@ -353,8 +342,11 @@ def main():
     refresh = args.refresh
     detect_url = args.detect_url
     detect_image = args.detect_image
-
-
+    stats['filter']['expr'] = args.expr
+    stats['filter']['min_content_length'] = args.min_content_length
+    stats['filter']['max_errors'] = args.max_errors
+    stats['cache_path'] = args.cache
+    
 
     if args.detect:
         try:
@@ -369,7 +361,10 @@ def main():
                 sys.exit(1)
 
         if kind == 'builtin':
-            detect_image = basename
+            if basename == ':nude':
+                detect_image = basename
+            else:
+                detect_url = basename
         elif kind == 'image':
             detect_image = basename
             print(f"# Will use script {shutil.which(basename)} for filtering images")
@@ -388,21 +383,25 @@ def main():
         sys.stdout = Unbuffered(sys.stdout)
 
     if args.extensions:
-        page_extensions = args.extensions
+        stats['filter']['image_extensions'] = args.extensions
     
     if args.minsize:
-        page_image_minsize = args.minsize * 1024
+        stats['filter']['min_image_size'] = args.minsize * 1024
 
     if args.total:
-        page_mintotal = args.total
+        stats['filter']['min_total_images'] = args.total
 
+
+    if stats['cache_path']:
+        if os.path.exists(stats['cache_path']):
+            cache.load(stats['cache_path'])
+        else:
+            print(f"# No cache file {stats['cache_path']}, start with empty cache")
 
     # processing could start here
     # --url1 
     if args.url1:
         p = analyse(args.url1)
-        if p.error:
-            print("Page returned ERROR")
         print(p.status())
         for msg in p._log:
             print(" ", msg)
@@ -459,8 +458,8 @@ def main():
             days_tried += 1
             day = day - datetime.timedelta(days=1)
 
-    print(f"Finished all {len(words)} (skipped {skipped_words})")
-    if not matched_resume:
+    print(f"Finished {len(words)} (skipped {skipped_words}) words in {time.time() - started:.2f} seconds, found {stats['found_interesting_pages']} pages")
+    if fastforward and not matched_resume:
         abort(f"Did not found word {stats['resume']['word']}")
 
 if __name__ == '__main__':

@@ -48,8 +48,16 @@ class RemoteImage:
         new method, using external script
         """
 
+        if script == ':true':
+            return True
+
+        if script == ':false':
+            return False
+
         if script==':nude':
-            return nude.is_nude(self.path)
+            n = nude.Nude(self.path)            
+            n.resize(maxheight=800, maxwidth=600)
+            return n.parse().result
 
         rc = subprocess.run([script, self.path], env=os.environ.copy())
         if rc.returncode >= 100:
@@ -58,7 +66,7 @@ class RemoteImage:
         return bool(rc.returncode)
 
 
-    def detect_nudity(self):
+    def UNUSED_detect_nudity(self):
 
         try:
             img = Image.open(self.path)
@@ -72,7 +80,7 @@ class RemoteImage:
 
         files = {'image': open(self.path,'rb')}
         try:
-            r = requests.post(detector_address,files=files)
+            r = requests.post(detector_address, files=files)
         except requests.RequestException as e:
             print(e)
             print("maybe detector not running?")

@@ -117,14 +117,16 @@ When working with worklists an --stats file, current status is periodically save
 You may check container memory usage with `sudo docker stats` or `sudo docker stats --no-stream`. Often containers consume more and more memory with time, leading to out-of-memory in the end. To prevent this problem use combination of `--stop` and `--refresh` like `--stop 1000 --refresh bin/refresh-nsfw-api.sh` this will call refresh script every 1000 images. Refresh script should stop current container and start it again. See source of refresh-nsfw-api.sh for example, it's very simple.
 
 ### Benchmarking/test
-Tested on same page, different technologies (default thresholds) gives different results:
+Tested on same page, different technologies (default thresholds) gives different results.
+Page A: *belle delphine from 16th Jan* (64 lite sexy images, mostly underwear, nude breast on few)
+Page B: *sasha grey* from 18 Apr (16 images, 12 clearly nsfw, 4 are clearly safe )
 
-| filtering technology           | time   | results                                       |
-|---                             |---     |---                                            |
-|:nude (bilt-in)                 | 3m 16s | total: 22 (need: 1) nude: 15 (1) video: 0 (1) |
-|detect-image-nsfw_api (docker)  | 31s    | total: 22 (need: 1) nude: 20 (1) video: 0 (1) |
-|detect-image-detector (docker)  | 37s    | total: 22 (need: 1) nude: 10 (1) video: 0 (1) |
-|detect-image-nudenet  (scripts) | 32s    | total: 22 (need: 1) nude: 20 (1) video: 0 (1) |
+| filtering technology           | A time | A nudes | B time | B nudes                            |
+|---                             |---     | --      |---     |---                                 | 
+|:nude (bilt-in)                 | 127s   | 63      | 34s    | 14 (false positives/negatives)     |
+|detect-image-nsfw_api (docker)  | 90s    | 49      | 23s    | 12                                 |
+|detect-image-aid (docker)       | 124s   | 10      | 28s    | 6 (false negatives)                |
+|detect-image-nudenet  (scripts) | 90s    | 57      | 24s    | 12                                 |
 
 ## Working with wordlists
 In simplest case (not so big wordlist), just use `-w`, like:

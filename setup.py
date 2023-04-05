@@ -26,7 +26,7 @@ setup(
     'bin/refresh-nsfw-api.sh'
     ],
 
-    install_requires=['bs4', 'requests', 'pillow', 'nudepy', 'transliterate'],
+    install_requires=['bs4', 'requests', 'pillow', 'nudepy', 'transliterate' ,'evalidate'],
 
     url='https://github.com/yaroslaff/nudecrawler',
     license='MIT',
