@@ -13,4 +13,6 @@
 - detect-server-nudenet.py can work as daemon now
 - autostart(/stop) nudenet server
 - dotenv
+
+# 0.3.4
 - --bugreport
