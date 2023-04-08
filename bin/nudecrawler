@@ -31,6 +31,7 @@ stats = {
         'min_image_size': None,
         'min_total_images': 0,
         'min_content_length': None,
+        'max_pictures': None,
         'image_extensions': None,        
         'max_errors': None
     },
@@ -160,7 +161,9 @@ def get_args(argv=None):
     g.add_argument('--detect', metavar='METHOD', default=def_detect, help=f'One of {methods_list}')
     g.add_argument('--extensions', nargs='*', default=['.jpeg','.jpg', '.png'],help='interesting extensions (with dot, like .jpg)')
     g.add_argument('--minsize', type=int, default=def_minsize,help=f'min size of image in Kb ({def_minsize})')
+    g.add_argument('--max-pictures', type=int, metavar='N', help=f'Detect only among first prefiltered N pictures')
     g.add_argument('--cache', metavar='PATH', help=f'path to cache file (will create if missing)')
+
 
     g = parser.add_argument_group('Output options')
     g.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
@@ -192,6 +195,7 @@ def analyse(url):
             image_extensions = stats['filter']['image_extensions'],
             min_total_images=stats['filter']['min_total_images'],
             max_errors=stats['filter']['max_errors'],
+            max_pictures=stats['filter']['max_pictures'],
             expr = stats['filter']['expr'], min_content_length=stats['filter']['min_content_length'])
 
     stats['urls'] += 1
@@ -379,6 +383,7 @@ def main():
     stats['filter']['expr'] = args.expr
     stats['filter']['min_content_length'] = args.min_content_length
     stats['filter']['max_errors'] = args.max_errors
+    stats['filter']['max_pictures'] = args.max_pictures
     stats['cache_path'] = args.cache
     
     if args.bugreport:

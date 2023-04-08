@@ -16,3 +16,6 @@
 
 # 0.3.4
 - --bugreport
+
+# 0.3.5
+- --max-pictures

@@ -46,7 +46,7 @@ def sha1sum(path):
 class Page:
 
     def __init__(self, url: str, all_found=False, detect_image=None, min_total_images = 0, min_images_size = 10*1024,
-                 image_extensions=None, max_errors = None,
+                 image_extensions=None, max_errors = None, max_pictures=None,
                  detect_url=None, min_content_length=None, ignore_content_length=None, expr='True'):
         self.url = url
         self.nban_links = 0
@@ -78,6 +78,7 @@ class Page:
         self.min_image_size = min_images_size
         self.min_total_images = min_total_images
         self.max_errors = max_errors
+        self.max_pictures = max_pictures
 
         # expr to filter interesing
         self._code = None
@@ -328,7 +329,7 @@ class Page:
             return
 
         if not self.all_found:
-            for url in image_list:
+            for url in image_list[:self.max_pictures]:
                 self.is_nude(url)
                 processed_images += 1
 
