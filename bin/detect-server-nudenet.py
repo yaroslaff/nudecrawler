@@ -5,13 +5,23 @@ from nudenet import NudeClassifier
 import os
 import sys
 import daemon
+from daemon import pidfile
+#import lockfile
 import argparse
+import signal
 from PIL import UnidentifiedImageError
 
 
 classifier = None
 
 app = Flask(__name__)
+
+pidfile_path = '/tmp/.nudenet-server.pid'
+
+@app.get("/ping")
+def ping():
+    return "ну вот pong, и что?"
+
 
 @app.route("/detect", methods=["POST"])
 def detect():
@@ -56,6 +66,8 @@ def get_args():
     parser = argparse.ArgumentParser('Daemonical REST API for NudeNet')
     parser.add_argument("--port", type=int, default=5000)
     parser.add_argument("-d", '--daemon', action='store_true', default=False)
+    parser.add_argument('--kill', action='store_true', default=False)
+    parser.add_argument('--pidfile', default=pidfile_path)
     return parser.parse_args()
 
 def sanity_check():
@@ -82,14 +94,32 @@ def sanity_check():
 
 def main():
     global classifier
+    global pidfile
     args = get_args()
     if not sanity_check():
         sys.exit(1)
-
+    
     classifier = NudeClassifier()
 
+    if args.kill:
+        try:
+            with open(pidfile_path) as fh:
+                pid = int(fh.read())
+                print("Killing nudenet server with pid", pid)
+                os.kill(pid, signal.SIGINT)
+            os.unlink(pidfile_path)
+        except FileNotFoundError:
+            print("no pidfile", pidfile_path, "not doing anything")
+        sys.exit(0)
+
     if args.daemon:
-        with daemon.DaemonContext():
+        with daemon.DaemonContext(
+            # pidfile=lockfile.FileLock(args.pidfile)
+            pidfile=pidfile.TimeoutPIDLockFile(pidfile_path)
+            ):
+            # pid = os.getpid()
+            # with open(pidfile, "w+") as fh:
+            #    print(pid, file=fh)
             app.run(port=args.port)
     else:
         app.run(port=args.port)    

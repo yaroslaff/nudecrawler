@@ -4,10 +4,13 @@
 - urls.txt converted to lowercase (and about duplicates are removed)
 - unified verbose (-v) print (vprint)
 
-# 0.3.0 (2023-04-03)
+# 0.3.3 (2023-04-03)
 - evalidate support 
 - persistent cache
 - new built-in fake detectors true and false
 - very basic pytest test added
 - fixed bug in transliteration RU->EN
 - detect-server-nudenet.py can work as daemon now
+- autostart(/stop) nudenet server
+- dotenv
+- --bugreport

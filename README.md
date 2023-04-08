@@ -20,7 +20,6 @@ alternatively, install right from git repo:
 pip3 install git+https://github.com/yaroslaff/nudecrawler
 ```
 
-
 ## Launch Nude Crawler!
 
 (I intentionally changed links, do not want to violate github policy)
@@ -44,74 +43,6 @@ INTERESTING https://telegra.ph/sasha-grey-XXXXX
 Nudecrawler uses [evalidate](https://github.com/yaroslaff/evalidate) to filter results with python expression (`--expr`). With `-h` help will list all avaliable variables, like: `total_images nude_images nonnude_images new_nude_images new_nonnude_images new_total_images total_video`.
 Default value: `(total_images>5 and new_nude_images>0) or total_video>0`.
 
-## Working with different nudity detectors
-
-NudeCrawler can work with different nudity detectors and very easy to extend. Option `-a`/`--all` will disable detection totally, and it will report all pages.
-
-Bult-in filter `:nude` based on [nude.py](https://github.com/hhatto/nude.py), (python port of [nude.js](https://github.com/pa7/nude.js)) is mostly good and used by default (and does not needs to install many dependecties as with keras/tensorflow detectors, which better to use as Docker images), but it's slower
-
-There are two options to connect user filters, `--detect-image SCRIPT` and `--detect-url SCRIPT`, first one will call script and pass it filename of downloaded image to analyse, and second one will call script and pass it URL of image to analyse. Script should return with either 0 return code (image is SFW) or 1 (image is NSFW). Mnemonic: return code is number of *interesting* images. 
-
-if you will use `/bin/true` as script, it will detect all images as nude, and `/bin/false` will detect all images as non-nude.
-
-Scripts are usually installed to /usr/local/bin and if it's in $PATH, you do not need to specify full path to script, nudecrawler will find it in $PATH.
-
-### detector: nsfw_api (recommended)
-
-To use [nsfw_api](https://github.com/arnidan/nsfw-api):
-
-Start:
-~~~
-sudo docker run --rm --name nsfw-api -d -p 3000:3000 ghcr.io/arnidan/nsfw-api:latest
-~~~
-
-Use option `--detect nsfwapi`
-
-This detector understands DETECTOR_VERBOSE, and special threshold for each of NSFW classes (porn, sexy, hentai),
-also, DETECTOR_THRESHOLD sets default threshold for all classes.
-~~~
-DETECTOR_VERBOSE=1 DETECTOR_THRESHOLD_HENTAI=0.9 bin/detect-image-nsfw-api.py /tmp/sketch-girl.jpg ; echo $?
-Safe /tmp/sketch-girl.jpg: {'hentai': 0.57, 'drawing': 0.4, 'porn': 0.02, 'neutral': 0.01, 'sexy': 0.0}
-0
-~~~
-
-### detector: adult-image-detector 
-To use [adult-image-detector](https://github.com/open-dating/adult-image-detector):
-~~~
-sudo docker run --rm -d -p 9191:9191 --name aid --memory=1G opendating/adult-image-detector
-~~~
-
-And use option `--detect aid`
-
-adult-image-detector works good and fast for me, but has memory leaking so needs more and more RAM. It's good for short-time run
-
-### detector: NudeNet
-
-#### Installing NudeNet (little trick needed)
-Using NudeNet does not requires docker, but you need to install `pip3 install -U flask nudenet python-daemon` (consider using virtualenv, because nudenet has many dependencies). Also, NudeNet requires model in file `~/.NudeNet/classifier_model.onnx`, if file is missing, NudeNet (unsuccessfully) *tries* to download file from https://github.com/notAI-tech/NudeNet/releases/download/v0/classifier_model.onnx but there is problem, github may display warning page instead of real .onnx file, so this page is downloaded (which is certainly wrong).
-
-Right way workaround is simple - after you will install NudeNet download model *manually* (no wget!) and place it to `~/.NudeNet/`
-
-Or you can download from my temporary site: `wget https://nudecrawler.netlify.app/classifier_model.onnx` (But I cannot promise it will be there forever) and put it to ~/.NudeNet .
-
-
-#### Using NudeNet with NudeCrawler
-[NudeNet](https://github.com/notAI-tech/NudeNet) filtering is implemented as client-server. Start server (PATH_TO/detect-server-nudenet.py) on other terminal (or screen/tmux) and add option `--detect nudenet` to NudeCrawler.
-
-### Writing your own detector
-If you want to write your own detector, explore current detector scripts as example, but here is main rules:
-- Image URL or PATH passed as argv[1]
-- Return 0 if image is safe and boring, return 1 if image is interesting
-- Return 0 if there are any technical problems (timeout or 404)
-- Additional configuration could be specified via environment, NudeCrawler will pass environment to your script
-- NudeCrawler also sets env variables `NUDECRAWLER_PAGE_URL` and `NUDECRAWLER_IMAGE_URL`
-
-
-### Prefiltering
-To speed-up processing, nudecrawler uses pre-filtering, HTTP HEAD request is performed for any image, and further processing is performed only if images passes basic check:
-- Image URL must return status 200
-- If server responds with Content-Length in response headers (telegra.ph uses Content-Length), it must be more then `--minsize` (minsize specified in Kb, and default value is 10Kb). This saves us from downloading/filtering icons.
-
 ### Long-time run
 
 #### Stop/Resume
@@ -131,46 +62,6 @@ Page B: *sasha grey* from 18 Apr (16 images, 12 clearly nsfw, 4 are clearly safe
 |detect-image-nsfw_api (docker)  | 90s    | 49      | 23s    | 12                                 |
 |detect-image-aid (docker)       | 124s   | 10      | 28s    | 6 (false negatives)                |
 |detect-image-nudenet  (scripts) | 90s    | 57      | 24s    | 12                                 |
-
-## Working with wordlists
-In simplest case (not so big wordlist), just use `-w`, like:
-~~~shell
-# verbose, no-filtering (report all pages), use wordlist
-nudecrawler -v -a -w wordlist.txt
-~~~
-
-If you have very large wordlist, better to pre-check it with faster tool like [bulk-http-check](https://github.com/yaroslaff/bulk-http-check), it's much faster, doing simple check (we need only filter-out 200 vs 404 pages) millions of page per hour on smallest VPS server.
-
-Convert wordlist to urllist
-~~~shell
-# only generate URLs 
-nudecrawler -v -w wordlist.txt --urls > urls.txt
-~~~
-Verify it with [bulk-http-check](https://github.com/yaroslaff/bulk-http-check) and get output file with this format:
-~~~
-https://telegra.ph/abazhurah-02-26 OK 404
-https://telegra.ph/ab-03-01 OK 200
-https://telegra.ph/aaronov-02-22 OK 404
-https://telegra.ph/abazhurami-02-25 OK 404
-~~~
-
-Filter it, to leave only existing pages, and strip date from it:
-~~~
-grep "OK 200" .local/urls-status.log | cut -f 1 -d" "| sed 's/-[0-9]\+-[0-9]\+$//g' | sort | uniq > .local/urs.txt
-~~~
-
-List (urls.txt) will look like:
-~~~
-https://telegra.ph/
-https://telegra.ph/a
-https://telegra.ph/ab
-https://telegra.ph/aba
-https://telegra.ph/Abakan
-....
-~~~
-This list (~300Kb, 11k urls) created from 1.5M words russian wordlist. There are only words which had at least one page with this title for last 10 days. So it has words 'Анжелика' or 'Анфиса' (beautiful woman names), but has no words 'Абажурами' or 'Абажуродержателем' (Because there are no pages with these titles on telegra.ph).
-
-Now you can use this file as wordlist (nudecrawler will detect it's already base URL, and will only append date to URL). 
 
 ### Example usage:
 Check one page (using built-in :nude filter):
@@ -246,3 +137,119 @@ list-related options:
   --refresh SCRIPT [ARG ...]
                         run this refresh script every --stop NUM_IMAGES images
 ~~~
+
+## Advanced Usage
+
+### Working with wordlists
+In simplest case (not so big wordlist), just use `-w`, like:
+~~~shell
+# verbose, no-filtering (report all pages), use wordlist
+nudecrawler -v -a -w wordlist.txt
+~~~
+
+If you have very large wordlist, better to pre-check it with faster tool like [bulk-http-check](https://github.com/yaroslaff/bulk-http-check), it's much faster, doing simple check (we need only filter-out 200 vs 404 pages) millions of page per hour on smallest VPS server.
+
+Convert wordlist to urllist
+~~~shell
+# only generate URLs 
+nudecrawler -v -w wordlist.txt --urls > urls.txt
+~~~
+Verify it with [bulk-http-check](https://github.com/yaroslaff/bulk-http-check) and get output file with this format:
+~~~
+https://telegra.ph/abazhurah-02-26 OK 404
+https://telegra.ph/ab-03-01 OK 200
+https://telegra.ph/aaronov-02-22 OK 404
+https://telegra.ph/abazhurami-02-25 OK 404
+~~~
+
+Filter it, to leave only existing pages, and strip date from it:
+~~~
+grep "OK 200" .local/urls-status.log | cut -f 1 -d" "| sed 's/-[0-9]\+-[0-9]\+$//g' | sort | uniq > .local/urs.txt
+~~~
+
+List (urls.txt) will look like:
+~~~
+https://telegra.ph/
+https://telegra.ph/a
+https://telegra.ph/ab
+https://telegra.ph/aba
+https://telegra.ph/Abakan
+....
+~~~
+This list (~300Kb, 11k urls) created from 1.5M words russian wordlist. There are only words which had at least one page with this title for last 10 days. So it has words 'Анжелика' or 'Анфиса' (beautiful woman names), but has no words 'Абажурами' or 'Абажуродержателем' (Because there are no pages with these titles on telegra.ph).
+
+Now you can use this file as wordlist (nudecrawler will detect it's already base URL, and will only append date to URL). 
+
+
+### Working with different nudity detectors
+
+NudeCrawler can work with different nudity detectors and very easy to extend. Option `-a`/`--all` will disable detection totally, and it will report all pages.
+
+Bult-in filter `:nude` based on [nude.py](https://github.com/hhatto/nude.py), (python port of [nude.js](https://github.com/pa7/nude.js)) is mostly good and used by default (and does not needs to install many dependecties as with keras/tensorflow detectors, which better to use as Docker images), but it's slower
+
+There are two options to connect user filters, `--detect-image SCRIPT` and `--detect-url SCRIPT`, first one will call script and pass it filename of downloaded image to analyse, and second one will call script and pass it URL of image to analyse. Script should return with either 0 return code (image is SFW) or 1 (image is NSFW). Mnemonic: return code is number of *interesting* images. 
+
+if you will use `/bin/true` as script, it will detect all images as nude, and `/bin/false` will detect all images as non-nude.
+
+Scripts are usually installed to /usr/local/bin and if it's in $PATH, you do not need to specify full path to script, nudecrawler will find it in $PATH.
+
+#### detector: nsfw_api (recommended)
+
+To use [nsfw_api](https://github.com/arnidan/nsfw-api):
+
+Start:
+~~~
+sudo docker run --rm --name nsfw-api -d -p 3000:3000 ghcr.io/arnidan/nsfw-api:latest
+~~~
+
+Use option `--detect nsfwapi`
+
+This detector understands DETECTOR_VERBOSE, and special threshold for each of NSFW classes (porn, sexy, hentai),
+also, DETECTOR_THRESHOLD sets default threshold for all classes.
+~~~
+DETECTOR_VERBOSE=1 DETECTOR_THRESHOLD_HENTAI=0.9 bin/detect-image-nsfw-api.py /tmp/sketch-girl.jpg ; echo $?
+Safe /tmp/sketch-girl.jpg: {'hentai': 0.57, 'drawing': 0.4, 'porn': 0.02, 'neutral': 0.01, 'sexy': 0.0}
+0
+~~~
+
+#### detector: adult-image-detector 
+To use [adult-image-detector](https://github.com/open-dating/adult-image-detector):
+~~~
+sudo docker run --rm -d -p 9191:9191 --name aid --memory=1G opendating/adult-image-detector
+~~~
+
+And use option `--detect aid`
+
+adult-image-detector works good and fast for me, but has memory leaking so needs more and more RAM. It's good for short-time run
+
+#### detector: NudeNet
+
+##### Installing NudeNet (little trick needed)
+Using NudeNet does not requires docker, but you need to install `pip3 install -U flask nudenet python-daemon` (consider using virtualenv, because nudenet has many dependencies). Also, NudeNet requires model in file `~/.NudeNet/classifier_model.onnx`, if file is missing, NudeNet (unsuccessfully) *tries* to download file from https://github.com/notAI-tech/NudeNet/releases/download/v0/classifier_model.onnx but there is problem, github may display warning page instead of real .onnx file, so this page is downloaded (which is certainly wrong).
+
+Right way workaround is simple - after you will install NudeNet download model *manually* (no wget!) and place it to `~/.NudeNet/`
+
+Or you can download from my temporary site: `wget https://nudecrawler.netlify.app/classifier_model.onnx` (But I cannot promise it will be there forever) and put it to ~/.NudeNet .
+
+
+##### Using NudeNet with NudeCrawler
+[NudeNet](https://github.com/notAI-tech/NudeNet) filtering is implemented as client-server. Start server (PATH_TO/detect-server-nudenet.py) on other terminal (or screen/tmux) and add option `--detect nudenet` to NudeCrawler.
+
+#### Writing your own detector
+If you want to write your own detector, explore current detector scripts as example, but here is main rules:
+- Image URL or PATH passed as argv[1]
+- Return 0 if image is safe and boring, return 1 if image is interesting
+- Return 0 if there are any technical problems (timeout or 404)
+- Additional configuration could be specified via environment, NudeCrawler will pass environment to your script
+- NudeCrawler also sets env variables `NUDECRAWLER_PAGE_URL` and `NUDECRAWLER_IMAGE_URL`
+
+### Building docker container
+Repository includes Dockerfile. Use `sudo docker build -t nudecrawler .` to build it.
+
+
+### Little bit about internals
+
+#### Prefiltering
+To speed-up processing, nudecrawler uses pre-filtering, HTTP HEAD request is performed for any image, and further processing is performed only if images passes basic check:
+- Image URL must return status 200
+- If server responds with Content-Length in response headers (telegra.ph uses Content-Length), it must be more then `--minsize` (minsize specified in Kb, and default value is 10Kb). This saves us from downloading/filtering icons.

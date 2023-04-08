@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import urllib.request
 from urllib.parse import urljoin
 from .remoteimage import RemoteImage
+from . import verbose
 from .verbose import printv
 from .exceptions import *
 from .cache import cache
@@ -44,10 +45,10 @@ def sha1sum(path):
 
 class Page:
 
-    def __init__(self, url, all_found=False, detect_image=None, min_total_images = 0, min_images_size = 10*1024,
+    def __init__(self, url: str, all_found=False, detect_image=None, min_total_images = 0, min_images_size = 10*1024,
                  image_extensions=None, max_errors = None,
                  detect_url=None, min_content_length=None, ignore_content_length=None, expr='True'):
-        self.url = url                
+        self.url = url
         self.nban_links = 0
         self.nban_images = 0
         self.nude_images = 0
@@ -95,6 +96,8 @@ class Page:
         node = evalidate(expr)
         self._code = compile(node, '<user filter>', 'eval')
         
+        printv("Processing:", self.url)
+
         try:
             page = urllib.request.urlopen(self.url)
             self.http_code = page.getcode()
@@ -107,7 +110,8 @@ class Page:
                 return
         except (urllib.error.URLError, ConnectionError, http.client.RemoteDisconnected) as e:
             if e.status == 404:
-                # silent ignore most usual error
+                # silent ignore most usual error (unless verbose)
+                printv(url, 404)
                 self._status = "IGNORED"
                 self._status_detailed = "404"
                 self._ignore = True
@@ -287,7 +291,17 @@ class Page:
             return
 
         if self.detect_image:
-            self.do_detect_image(url)
+            try:
+                self.do_detect_image(url)
+            except Exception as e:
+                if verbose.send_bugreports:
+                    verbose.bugreport(page_url=self.url, image_url=url, detector=self.detect_image, exception=str(e))
+                else:
+                    print("Please run with --bugreport option to send automatical and anonymous bugreport (I will not see your IP)")
+                    print("Detector:", self.detect_image)
+                    print("Problem page:", self.url)
+                    print("Problem image:", url)
+                sys.exit(1)
             return
                 
         

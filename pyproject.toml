@@ -21,6 +21,7 @@ evalidate = "^1.0.2"
 pytest = "^7.2.2"
 nudenet = "^2.0.9"
 python-daemon = "^3.0.1"
+python-dotenv = "^1.0.0"
 
 
 [build-system]
