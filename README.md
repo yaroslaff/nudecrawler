@@ -81,25 +81,6 @@ Page B: *sasha grey* from 18 Apr (16 images, 12 clearly nsfw, 4 are clearly safe
 |detect-image-aid (docker)       | 124s   | 10      | 28s    | 6 (false negatives)                |
 |detect-image-nudenet  (scripts) | 90s    | 57      | 24s    | 12                                 |
 
-### Example usage:
-Check one page (using built-in :nude filter):
-~~~
-nudecrawler -v --url1 https://telegra.ph/your-page-address 
-~~~
-
-~~~
-nudecrawler -w urls.txt --nude 5 -d 30 -f 5 --stats .local/mystats.json  --log .local/nudecrawler.log 
-~~~
-process urls from urls.txt, report page if 5+ nude images (or 1 any video, default), nudity must be over 0.5 threshold, check from todays date to 30 days ago, append all found pages to .local/nudecrawler.log, save periodical statistics to .local/mystats.json
-
-If crawler will see page `Sasha-Grey-01-23-100`, but `Sasha-Grey-01-23-101` is 404 Not Found, it will try `-102` and so on. It will stop only if 5 (-f) pages in a row will fail. 
-
-~~~
-nudecrawler -v --detect-image bin/detect-image-nsfw-api.py -f 5 --total 10 --nude 3 -w urls.txt --stats .local/stats.json --log .local/urls.log --stop 1000 --refresh bin/refresh-nsfw-api.sh
-~~~
-
-Work verbosely (-v), use NSFW_API for resolving (and call refresh-nsfw-api.sh script to restart docker container every 1000 images).
-
 ## Options
 ~~~
 usage: nudecrawler [-h] [-d DAYS] [--url1 URL] [-f FAILS] [--day MONTH DAY] [--expr EXPR] [--total N] [--max-errors N] [--min-content-length N] [-a] [--detect-image SCRIPT]

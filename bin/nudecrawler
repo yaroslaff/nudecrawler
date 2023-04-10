@@ -337,7 +337,18 @@ def main():
     sanity_check(args)
 
     # when fastforward, we go to specific word/day/count quickly
-    fastforward = False
+    fastforward = False    
+
+    if args.unbuffered:
+        sys.stdout = Unbuffered(sys.stdout)
+
+
+    if args.workdir:
+        for attr in ['cache', 'wordlist', 'log', 'resume', 'stats']:
+            old = getattr(args, attr)
+            if old is not None:
+                new = os.path.join(args.workdir, old)
+                setattr(args, attr, new)
 
     if args.resume:
         print("Resume from", args.resume)
@@ -351,19 +362,7 @@ def main():
         fastforward = True
     else:
         stats['cmd'] = ' '.join(sys.argv)
-    
 
-
-    if args.unbuffered:
-        sys.stdout = Unbuffered(sys.stdout)
-
-
-    if args.workdir:
-        for attr in ['cache', 'wordlist', 'log', 'resume', 'stats']:
-            old = getattr(args, attr)
-            if old is not None:
-                new = os.path.join(args.workdir, old)
-                setattr(args, attr, new)
 
 
     # nude = args.nude
