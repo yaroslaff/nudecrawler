@@ -244,7 +244,10 @@ If you want to write your own detector, explore current detector scripts as exam
 - NudeCrawler also sets env variables `NUDECRAWLER_PAGE_URL` and `NUDECRAWLER_IMAGE_URL`
 
 ### Building docker container
-Repository includes Dockerfile. Use `sudo docker build -t nudecrawler .` to build it.
+Repository includes Dockerfile. Use `sudo docker build -t nudecrawler -f docker/Dockerfile .` to build it.
+
+Running docker container (example): `sudo docker run -v /tmp/run/:/work nudecrawler nudecrawler -w urls.txt -v`
+If you specify files for docker (like `-w`, `--stats`, `--resume`, `--log`, `--cache`) path will be modified starting from /work. e.g. `-w urls.txt` will be `-w /work/urls.txt` which is /tmp/run/urls.txt on host.
 
 
 ### Little bit about internals

@@ -94,45 +94,26 @@ filter_methods = {
     "true": ("builtin", ":true"),
     "false": ("builtin", ":false"),
     "nudepy": ("builtin", ":nude"),
+    "nudenetb": ("builtin", ":nudenet"),
     "aid": ("image", "detect-image-aid.py"),
     "nsfwapi": ("image", "detect-image-nsfw-api.py"),
     "nudenet": ("image", "detect-image-nudenet.py")
 }
 
-nudenet_server_started = False
-
-def is_nudenet_running():
-    try:
-        r = requests.get('http://localhost:5000/ping')
-    except requests.RequestException:
-        return False
-    return r.status_code == 200
-
-def cond_start_nudenet():    
-    global nudenet_server_started
-
-    if is_nudenet_running():
-        return
-    
-    print("starting nudenet server...")
-    subprocess.run(['detect-server-nudenet.py', '-d'])
-    nudenet_server_started = True
-
-def cond_stop_nudenet():
-    if nudenet_server_started:
-        print("stopping nudenet server...")
-        subprocess.run(['detect-server-nudenet.py', '--kill'])
-        
-
 def get_args(argv=None):
 
     load_dotenv()  
 
-    def_detect = os.getenv('NUDE_DETECT', None)
+    def_detect = os.getenv('NUDE_DETECT')
+    def_cache = os.getenv('NUDE_CACHE')
+    def_log = os.getenv('NUDE_LOG')
+    def_stats = os.getenv('NUDE_STATS', '/tmp/nudecrawler-stats.txt')
+    def_unbuf = bool(os.getenv('NUDE_UNBUF'))
 
     parser = argparse.ArgumentParser(description=f'Nudecrawler: Telegra.ph Spider {version}\nhttps://github.com/yaroslaff/nudecrawler', formatter_class=argparse.RawTextHelpFormatter)
 
     def_expr = '(total_images>5 and new_nude_images>0) or total_video>0'
+    def_workdir = os.getenv('NUDE_DIR', '.')
 
     def_total =5
     def_minsize=10
@@ -162,20 +143,21 @@ def get_args(argv=None):
     g.add_argument('--extensions', nargs='*', default=['.jpeg','.jpg', '.png'],help='interesting extensions (with dot, like .jpg)')
     g.add_argument('--minsize', type=int, default=def_minsize,help=f'min size of image in Kb ({def_minsize})')
     g.add_argument('--max-pictures', type=int, metavar='N', help=f'Detect only among first prefiltered N pictures')
-    g.add_argument('--cache', metavar='PATH', help=f'path to cache file (will create if missing)')
+    g.add_argument('--cache', metavar='PATH', default=def_cache, help=f'path to cache file (will create if missing)')
 
 
     g = parser.add_argument_group('Output options')
     g.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
-    g.add_argument('--unbuffered', '-b', default=False, action='store_true', help='Use unbuffered stdout')
+    g.add_argument('--unbuffered', '-b', default=def_unbuf, action='store_true', help='Use unbuffered stdout')
     g.add_argument('--urls', default=False, action='store_true', help='Do not detect, just generate and print URLs')    
-    g.add_argument('--log', help='print all precious treasures to this logfile')
+    g.add_argument('--log', default=def_log, help='print all precious treasures to this logfile')
     g.add_argument('--bugreport', default=False, action='store_true', help='print all precious treasures to this logfile')
+    g.add_argument('--workdir', default=def_workdir, help=f'Use all files (log, wordlist, cache) in this dir. def: {def_workdir}')
 
 
     g = parser.add_argument_group('list-related options')
     g.add_argument('-w', '--wordlist', help='wordlist (urllist) file')
-    g.add_argument('--stats', metavar='STATS_FILE', default='/tmp/nudecrawler-stats.txt', help='periodical statistics file')
+    g.add_argument('--stats', metavar='STATS_FILE', default=def_stats, help='periodical statistics file')
     g.add_argument('--resume', metavar='STATS_FILE', help='resume from STATS_FILE (other args are not needed)')
     g.add_argument('--stop', type=int, metavar='NUM_IMAGES', help='stop (or --refresh) after N images processed (or little after)')
     g.add_argument('--refresh', metavar=('SCRIPT', 'ARG'), nargs='+', help='run this refresh script every --stop NUM_IMAGES images')
@@ -369,6 +351,20 @@ def main():
     else:
         stats['cmd'] = ' '.join(sys.argv)
     
+
+
+    if args.unbuffered:
+        sys.stdout = Unbuffered(sys.stdout)
+
+
+    if args.workdir:
+        for attr in ['cache', 'wordlist', 'log', 'resume', 'stats']:
+            old = getattr(args, attr)
+            if old is not None:
+                new = os.path.join(args.workdir, old)
+                setattr(args, attr, new)
+
+
     # nude = args.nude
     # video = args.video
     verbose = args.verbose
@@ -402,7 +398,7 @@ def main():
                 sys.exit(1)
 
         if kind == 'builtin':
-            if basename == ':nude':
+            if basename in [':nude', ':nudenet']:
                 detect_image = basename
             else:
                 detect_url = basename
@@ -414,20 +410,12 @@ def main():
             print(f"# Will use script {shutil.which(basename)} for filtering images")            
     
 
-        # special helper
-        if args.detect == 'nudenet':
-            cond_start_nudenet()
-
-
     # fix arguments
-    if not any([detect_image, detect_url, all_found]):
+    if not any([detect_image, detect_url, all_found]):        
         print("# No filter, using built-in :nude by default")
         detect_image=':nude'
 
     nudecrawler.verbose.verbose = verbose
-
-    if args.unbuffered:
-        sys.stdout = Unbuffered(sys.stdout)
 
     if args.extensions:
         stats['filter']['image_extensions'] = args.extensions
@@ -469,11 +457,6 @@ def main():
 
     logfile = args.log
 
-    #if args.stats and os.path.exists(args.stats):
-    #    with open(args.stats) as fh:
-    #        stats = json.load(fh)
-    #        fastforward = True
-
     for w in words:
         if fastforward and not matched_resume:
             if w == stats['resume']['word']:
@@ -505,7 +488,7 @@ def main():
             days_tried += 1
             day = day - datetime.timedelta(days=1)
 
-    cond_stop_nudenet()
+
     print(f"Finished {len(words)} (skipped {skipped_words}) words in {time.time() - started:.2f} seconds, found {stats['found_interesting_pages']} pages")
     if fastforward and not matched_resume:
         abort(f"Did not found word {stats['resume']['word']}")
@@ -517,4 +500,4 @@ if __name__ == '__main__':
         print("KEYBOARD INTERRUPT")
         print(e)
         save_stats(force=True)
-        cond_stop_nudenet()
+        

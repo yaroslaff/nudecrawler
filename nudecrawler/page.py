@@ -21,8 +21,6 @@ import subprocess
 import sys
 import os
 
-
-
 #def trivial_iterator(xx):
 #    for x in xx:
 #        yield x
@@ -110,7 +108,8 @@ class Page:
                 self.ignore(f"content-length {self.content_length} < minimal {min_content_length}")
                 return
         except (urllib.error.URLError, ConnectionError, http.client.RemoteDisconnected) as e:
-            if e.status == 404:
+            if hasattr(e, 'status') and e.status == 404:
+                # print(e, type(e))
                 # silent ignore most usual error (unless verbose)
                 printv(url, 404)
                 self._status = "IGNORED"

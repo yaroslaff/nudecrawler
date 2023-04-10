@@ -99,6 +99,7 @@ def main():
     if not sanity_check():
         sys.exit(1)
     
+    print("load classified")
     classifier = NudeClassifier()
 
     if args.kill:
@@ -113,6 +114,7 @@ def main():
         sys.exit(0)
 
     if args.daemon:
+        print("work as daemon...")
         with daemon.DaemonContext(
             # pidfile=lockfile.FileLock(args.pidfile)
             pidfile=pidfile.TimeoutPIDLockFile(pidfile_path)
@@ -120,9 +122,13 @@ def main():
             # pid = os.getpid()
             # with open(pidfile, "w+") as fh:
             #    print(pid, file=fh)
+            print("daemon app.run")
             app.run(port=args.port)
+            print("after app.run")
     else:
-        app.run(port=args.port)    
+        app.run(port=args.port) 
+    
+    print("done.")   
 
 if __name__ == '__main__':
     main()

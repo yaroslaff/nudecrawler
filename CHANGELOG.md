@@ -18,4 +18,7 @@
 - --bugreport
 
 # 0.3.5
+- Dockerfile
+- --workdir option
 - --max-pictures
+- built-in optional nudenetb detector (if nudenet is installed)

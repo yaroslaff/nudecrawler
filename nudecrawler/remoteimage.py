@@ -1,5 +1,5 @@
 import PIL
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 import os
 from urllib.parse import urlparse
@@ -10,7 +10,16 @@ import subprocess
 import nude
 from .exceptions import ProblemImage
 
+
 # detector_address = 'http://localhost:9191/api/v1/detect'
+
+try:
+    from nudenet import NudeClassifier
+    print("Loading nudenet classifier....")
+    nudenet_classifier = NudeClassifier()
+
+except ModuleNotFoundError:
+    nudenet_classifier = None
 
 class RemoteImage:
     def __init__(self, url):        
@@ -27,7 +36,7 @@ class RemoteImage:
         if r.status_code != 200:
             raise ProblemImage(f'Bad status {r.status_code} for {self.url}')
 
-        self.threshold = 0.5
+        self.threshold = float(os.getenv('NUDE_DETECT_THRESHOLD', '0.5'))
 
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
             self.path = tmp.name
@@ -58,6 +67,12 @@ class RemoteImage:
             n = nude.Nude(self.path)            
             n.resize(maxheight=800, maxwidth=600)
             return n.parse().result
+        
+        if script==':nudenet':
+            if nudenet_classifier is None:
+                print("built-in nudenet classified selected, but nudenet is not installed or model not loaded")
+                sys.exit(1)
+            return self.nudenet_detect()
 
         rc = subprocess.run([script, self.path], env=os.environ.copy())
         if rc.returncode >= 100:
@@ -65,30 +80,31 @@ class RemoteImage:
             sys.exit(1)        
         return bool(rc.returncode)
 
-
-    def UNUSED_detect_nudity(self):
-
+    def nudenet_detect(self):
         try:
-            img = Image.open(self.path)
-        except PIL.UnidentifiedImageError:
-            raise ValueError('Incorrect image')
-        w, h = img.size
-
-        if w<200 or h<200:
-            # boring! maybe icon
-            raise ValueError('Image is too small')
-
-        files = {'image': open(self.path,'rb')}
-        try:
-            r = requests.post(detector_address, files=files)
-        except requests.RequestException as e:
-            print(e)
-            print("maybe detector not running?")
-            print("docker run -d -p 9191:9191 opendating/adult-image-detector")
-            print("or add -a to skip filtering")
-            sys.exit(1)
+            r = nudenet_classifier.classify(self.path)
+        except UnidentifiedImageError as e:
+            print(f"Err: {self.url} {e}")
+            result = {
+                'status': 'ERROR',
+                'error': str(e)
+            }
+            return False
+        except Exception as e:
+            print(f"Got uncaught exception {type(e)}: {e}")
         
-        # return r.json()['an_algorithm_for_nudity_detection']
-        return r.json()['open_nsfw_score'] > self.threshold
-    
+
+        # sometimes no exception, but empty response, e.g. when mp4 instead of image
+        if not r:
+            print(f"Err: {self.url} empty reply")
+            result = {
+                'status': 'ERROR',
+                'error': "empty reply from classifier"
+            }
+            return False
+        
+        if r[self.path]['unsafe'] > self.threshold:
+            return True
+        
+        return False
 
