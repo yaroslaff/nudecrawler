@@ -14,7 +14,7 @@ Please use it only for legal and ethical purposes. And it's 18+ surely.
 Recommended (and most secure) way is using docker:
 ```
 mkdir /tmp/run
-sudo docker run -v /tmp/run:/work yaroslaff/nudecrawler nudecrawler -a Eva "Sasha Grey" "Belle Delphine" Amouranth
+sudo docker run --rm -v /tmp/run:/work yaroslaff/nudecrawler nudecrawler -a Eva "Sasha Grey" "Belle Delphine" Amouranth
 ```
 
 See below how to refine your searching and filtering.
