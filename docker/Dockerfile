@@ -1,6 +1,6 @@
 FROM python:3.9-bullseye
 WORKDIR /
-RUN apt update && apt install -y less lsof curl 
+# RUN apt update && apt install -y less lsof curl 
 # RUN apt update && \
 #    apt -y install python3-pip && \
 RUN   pip3 install -U pip nudenet flask python-daemon evalidate transliterate pytest nudepy python-dotenv bs4 pillow requests python-dotenv && \
