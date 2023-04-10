@@ -22,3 +22,6 @@
 - --workdir option
 - --max-pictures
 - built-in optional nudenetb detector (if nudenet is installed)
+
+# 0.3.7
+- NUDE_TOTAL

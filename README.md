@@ -11,6 +11,15 @@ Please use it only for legal and ethical purposes. And it's 18+ surely.
 
 ## Install
 
+Recommended (and most secure) way is using docker:
+```
+mkdir /tmp/run
+sudo docker run -v /tmp/run:/work yaroslaff/nudecrawler nudecrawler -a Eva "Sasha grey" "Belle Delphine" Amouranth
+```
+
+See below how to refine your searching and filtering.
+
+### Alternative install
 ```
 pip3 install nudecrawler
 ```
@@ -39,9 +48,35 @@ INTERESTING https://telegra.ph/sasha-grey-XXXXX
   Nude: 6 non-nude: 3
 ~~~
 
-## Getting only interesting results
+## Refine search/filtering
 Nudecrawler uses [evalidate](https://github.com/yaroslaff/evalidate) to filter results with python expression (`--expr`). With `-h` help will list all avaliable variables, like: `total_images nude_images nonnude_images new_nude_images new_nonnude_images new_total_images total_video`.
 Default value: `(total_images>5 and new_nude_images>0) or total_video>0`.
+
+Use `-a`/`--all` to get some results ASAP (but later you may want to make some filtering)
+
+  -d DAYS, --days DAYS
+
+
+  -f FAILS, --fails FAILS
+  --total N             Boring if less then N total images (5)
+  --max-errors N        Max allowed errors on page ()
+  --min-content-length N
+                        Interesting if N+ total images (5)
+
+Image filtering options:
+  -a, --all             do not detect, print all found pages
+  --detect-image SCRIPT
+                        explicitly use this script to detect nudity on image file
+  --detect-url SCRIPT   explicitly use this script to detect nudity on image URL
+  --detect METHOD       One of true, false, nudepy, nudenetb, aid, nsfwapi, nudenet
+  --extensions [EXTENSIONS ...]
+                        interesting extensions (with dot, like .jpg)
+  --minsize MINSIZE     min size of image in Kb (10)
+  --max-pictures N      Detect only among first prefiltered N pictures
+
+
+
+
 
 ### Long-time run
 
@@ -69,7 +104,6 @@ Check one page (using built-in :nude filter):
 nudecrawler -v --url1 https://telegra.ph/your-page-address 
 ~~~
 
-
 ~~~
 nudecrawler -w urls.txt --nude 5 -d 30 -f 5 --stats .local/mystats.json  --log .local/nudecrawler.log 
 ~~~
@@ -85,13 +119,12 @@ Work verbosely (-v), use NSFW_API for resolving (and call refresh-nsfw-api.sh sc
 
 ## Options
 ~~~
-$ nudecrawler -h
 usage: nudecrawler [-h] [-d DAYS] [--url1 URL] [-f FAILS] [--day MONTH DAY] [--expr EXPR] [--total N] [--max-errors N] [--min-content-length N] [-a] [--detect-image SCRIPT]
-                   [--detect-url SCRIPT] [--detect METHOD] [--extensions [EXTENSIONS ...]] [--minsize MINSIZE] [--cache PATH] [-v] [--unbuffered] [--urls] [--log LOG] [-w WORDLIST]
-                   [--stats STATS_FILE] [--resume STATS_FILE] [--stop NUM_IMAGES] [--refresh SCRIPT [ARG ...]]
+                   [--detect-url SCRIPT] [--detect METHOD] [--extensions [EXTENSIONS ...]] [--minsize MINSIZE] [--max-pictures N] [--cache PATH] [-v] [--unbuffered] [--urls] [--log LOG]
+                   [--bugreport] [--workdir WORKDIR] [-w WORDLIST] [--stats STATS_FILE] [--resume STATS_FILE] [--stop NUM_IMAGES] [--refresh SCRIPT [ARG ...]]
                    [words ...]
 
-Nudecrawler: Telegra.ph Spider 0.3.0
+Nudecrawler: Telegra.ph Spider 0.3.6
 https://github.com/yaroslaff/nudecrawler
 
 positional arguments:
@@ -116,10 +149,11 @@ Image filtering options:
   --detect-image SCRIPT
                         explicitly use this script to detect nudity on image file
   --detect-url SCRIPT   explicitly use this script to detect nudity on image URL
-  --detect METHOD       One of true, false, nudepy, aid, nsfwapi, nudenet
+  --detect METHOD       One of true, false, nudepy, nudenetb, aid, nsfwapi, nudenet
   --extensions [EXTENSIONS ...]
                         interesting extensions (with dot, like .jpg)
   --minsize MINSIZE     min size of image in Kb (10)
+  --max-pictures N      Detect only among first prefiltered N pictures
   --cache PATH          path to cache file (will create if missing)
 
 Output options:
@@ -127,6 +161,8 @@ Output options:
   --unbuffered, -b      Use unbuffered stdout
   --urls                Do not detect, just generate and print URLs
   --log LOG             print all precious treasures to this logfile
+  --bugreport           print all precious treasures to this logfile
+  --workdir WORKDIR     Use all files (log, wordlist, cache) in this dir. def: .
 
 list-related options:
   -w WORDLIST, --wordlist WORDLIST

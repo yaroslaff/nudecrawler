@@ -9,11 +9,7 @@ RUN   pip3 install -U pip nudenet flask python-daemon evalidate transliterate py
       mkdir /work
 ADD docker/.env /
 
-ADD . nudecrawler/
-RUN cd nudecrawler && ls -l && python3 setup.py bdist_wheel && pip3 install dist/nudecrawler*whl
-RUN /usr/local/bin/nudecrawler -h
-
-
-
-
+# ADD . nudecrawler/
+# RUN cd nudecrawler && ls -l && python3 setup.py bdist_wheel && pip3 install dist/nudecrawler*whl
+RUN pip3 install nudecrawler
 

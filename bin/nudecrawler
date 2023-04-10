@@ -115,7 +115,8 @@ def get_args(argv=None):
     def_expr = '(total_images>5 and new_nude_images>0) or total_video>0'
     def_workdir = os.getenv('NUDE_DIR', '.')
 
-    def_total =5
+    def_total = int(os.getenv('NUDE_TOTAL', '1'))
+    def_errors = 5
     def_minsize=10
 
     methods_list = ', '.join(filter_methods.keys())
@@ -131,8 +132,8 @@ def get_args(argv=None):
     g = parser.add_argument_group('Page filtering options')
     parser.add_argument('--expr', '-e', metavar='EXPR', default=def_expr, 
                         help=f'Interesting if EXPR is True. def: {def_expr!r}\nFields: ' + ' '.join(context_fields) )
-    parser.add_argument('--total', metavar='N', type=int, default=5, help=f'Boring if less then N total images ({def_total})')
-    parser.add_argument('--max-errors', metavar='N', type=int, default=5, help=f'Max allowed errors on page ()')
+    parser.add_argument('--total', metavar='N', type=int, default=def_total, help=f'Boring if less then N total images ({def_total})')
+    parser.add_argument('--max-errors', metavar='N', type=int, default=def_errors, help=f'Max allowed errors on page ({def_errors})')
     parser.add_argument('--min-content-length', metavar='N', type=int, default=None, help=f'Interesting if N+ total images ({def_total})')
 
     g = parser.add_argument_group('Image filtering options')
