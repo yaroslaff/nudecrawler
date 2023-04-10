@@ -14,7 +14,7 @@ Please use it only for legal and ethical purposes. And it's 18+ surely.
 Recommended (and most secure) way is using docker:
 ```
 mkdir /tmp/run
-sudo docker run -v /tmp/run:/work yaroslaff/nudecrawler nudecrawler -a Eva "Sasha grey" "Belle Delphine" Amouranth
+sudo docker run -v /tmp/run:/work yaroslaff/nudecrawler nudecrawler -a Eva "Sasha Grey" "Belle Delphine" Amouranth
 ```
 
 See below how to refine your searching and filtering.
@@ -24,7 +24,9 @@ See below how to refine your searching and filtering.
 pip3 install nudecrawler
 ```
 
-alternatively, install right from git repo:
+
+
+or, install right from git repo:
 ```
 pip3 install git+https://github.com/yaroslaff/nudecrawler
 ```
@@ -54,28 +56,9 @@ Default value: `(total_images>5 and new_nude_images>0) or total_video>0`.
 
 Use `-a`/`--all` to get some results ASAP (but later you may want to make some filtering)
 
-  -d DAYS, --days DAYS
+Consider using `--days`, `--total` to narrow/wider search.
 
-
-  -f FAILS, --fails FAILS
-  --total N             Boring if less then N total images (5)
-  --max-errors N        Max allowed errors on page ()
-  --min-content-length N
-                        Interesting if N+ total images (5)
-
-Image filtering options:
-  -a, --all             do not detect, print all found pages
-  --detect-image SCRIPT
-                        explicitly use this script to detect nudity on image file
-  --detect-url SCRIPT   explicitly use this script to detect nudity on image URL
-  --detect METHOD       One of true, false, nudepy, nudenetb, aid, nsfwapi, nudenet
-  --extensions [EXTENSIONS ...]
-                        interesting extensions (with dot, like .jpg)
-  --minsize MINSIZE     min size of image in Kb (10)
-  --max-pictures N      Detect only among first prefiltered N pictures
-
-
-
+Also, `--cache`, `--max-pictures`, `--max-errors`, `--min-content-length` and `--minsize` to speed-up searching and discard some images/pages before wasting time on it.
 
 
 ### Long-time run

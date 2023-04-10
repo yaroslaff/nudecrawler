@@ -25,3 +25,6 @@
 
 # 0.3.7
 - NUDE_TOTAL
+
+# 0.3.8
+- typo fixed, README
