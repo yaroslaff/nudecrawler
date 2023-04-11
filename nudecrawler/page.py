@@ -117,7 +117,8 @@ class Page:
                 self._ignore = True
                 self.http_code = e.status
             else:
-                self.http_code = e.status
+                if hasattr(e, 'status'):
+                    self.http_code = e.status
                 self.ignore(f'Exception {e} with {self.url}')            
             return
         self.content_length = page.headers.get('content-length')
