@@ -345,6 +345,7 @@ def main():
     if args.resume:
         if args.workdir:
             args.resume = os.path.join(args.workdir, args.resume)
+
         print("Resume from", args.resume)
         try:
             load_stats(args.resume)
@@ -355,17 +356,14 @@ def main():
         args = get_args(shlex.split(cmd)[1:])
         fastforward = True
     else:
-        stats['cmd'] = ' '.join(sys.argv)
+        stats['cmd'] = shlex.join(sys.argv)
 
     if args.workdir:
         for attr in ['cache', 'wordlist', 'log', 'resume', 'stats']:
             old = getattr(args, attr)
-            if old is not None:
+            if old is not None:                
                 new = os.path.join(args.workdir, old)
                 setattr(args, attr, new)
-
-
-
 
     # nude = args.nude
     # video = args.video

@@ -28,3 +28,6 @@
 
 # 0.3.8
 - typo fixed, README
+
+# 0.3.11
+- fixed --workdir / --resume in docker image
