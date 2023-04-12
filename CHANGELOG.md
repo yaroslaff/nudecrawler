@@ -31,3 +31,9 @@
 
 # 0.3.11
 - fixed --workdir / --resume in docker image
+
+# 0.3.13
+- Catch errors (and not crash) with broken images
+- Load nudenet classifier only when needed
+
+

@@ -13,13 +13,18 @@ from .exceptions import ProblemImage
 
 # detector_address = 'http://localhost:9191/api/v1/detect'
 
-try:
-    from nudenet import NudeClassifier
-    print("Loading nudenet classifier....")
-    nudenet_classifier = NudeClassifier()
+nudenet_classifier = None
 
-except ModuleNotFoundError:
-    nudenet_classifier = None
+def _load():
+    global nudenet_classifier
+    try:
+        from nudenet import NudeClassifier
+        print("Loading nudenet classifier....")
+        nudenet_classifier = NudeClassifier()
+    except ModuleNotFoundError:
+        nudenet_classifier = None
+
+
 
 class RemoteImage:
     def __init__(self, url):        

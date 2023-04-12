@@ -13,7 +13,7 @@ import requests
 from dotenv import load_dotenv
 
 import nudecrawler 
-from nudecrawler import Page, Unbuffered
+from nudecrawler import Page, Unbuffered, load
 from nudecrawler.page import  get_processed_images, context_fields
 from nudecrawler.version import version
 from nudecrawler.cache import cache
@@ -434,6 +434,9 @@ def main():
             print(f"# No cache file {stats['cache_path']}, start with empty cache")
 
     # processing could start here
+
+    nudecrawler.load()
+
     # --url1 
     if args.url1:
         p = analyse(args.url1)

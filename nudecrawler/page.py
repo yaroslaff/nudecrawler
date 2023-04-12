@@ -295,14 +295,7 @@ class Page:
             try:
                 self.do_detect_image(url)
             except Exception as e:
-                if verbose.send_bugreports:
-                    verbose.bugreport(page_url=self.url, image_url=url, detector=self.detect_image, exception=str(e))
-                else:
-                    print("Please run with --bugreport option to send automatical and anonymous bugreport (I will not see your IP)")
-                    print("Detector:", self.detect_image)
-                    print("Problem page:", self.url)
-                    print("Problem image:", url)
-                sys.exit(1)
+                printv("Broken image:", url)
             return
                 
         
