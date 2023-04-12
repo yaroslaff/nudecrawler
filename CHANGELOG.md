@@ -39,3 +39,5 @@
 # 0.3.14
 - suppress logging from nudenetb
 
+# 0.3.16
+- conditionally print number of new images
