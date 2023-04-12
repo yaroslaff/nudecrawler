@@ -36,4 +36,6 @@
 - Catch errors (and not crash) with broken images
 - Load nudenet classifier only when needed
 
+# 0.3.14
+- suppress logging from nudenetb
 

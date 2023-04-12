@@ -17,8 +17,8 @@ then
 elif [ "$MODE" == "publish" ]
 then
     echo publish version $VERSION
-    # python3 setup.py bdist_wheel sdist
-    # twine upload dist/nudecrawler*$VERSION*
+    python3 setup.py bdist_wheel sdist
+    twine upload dist/nudecrawler*$VERSION*
     
     echo build version $VERSION
     echo === $VERSION
