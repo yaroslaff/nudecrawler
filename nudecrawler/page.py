@@ -379,6 +379,7 @@ class Page:
             text += f"  Total images: {self.total_images}\n"
         else:
             text += f"  Nude: {self.nude_images} non-nude: {self.nonnude_images}\n"
+            text += f"  New nude {self.new_nude_images} non-nude {self.new_nonnude_images}\n"
         if self.total_video:
             text += f"  Total video: {self.total_video}\n"
         
