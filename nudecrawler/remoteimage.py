@@ -9,7 +9,7 @@ import requests
 import subprocess
 import nude
 from .exceptions import ProblemImage
-
+from .verbose import printv
 
 # detector_address = 'http://localhost:9191/api/v1/detect'
 
@@ -98,14 +98,9 @@ class RemoteImage:
         except Exception as e:
             print(f"Got uncaught exception {type(e)}: {e}")
         
-
         # sometimes no exception, but empty response, e.g. when mp4 instead of image
         if not r:
-            print(f"Err: {self.url} empty reply")
-            result = {
-                'status': 'ERROR',
-                'error': "empty reply from classifier"
-            }
+            printv(f"Err: {self.url} empty reply")
             return False
         
         if r[self.path]['unsafe'] > self.threshold:

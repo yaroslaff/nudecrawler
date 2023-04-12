@@ -9,6 +9,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import logging
 import requests
 from dotenv import load_dotenv
 
@@ -337,7 +338,10 @@ def main():
     sanity_check(args)
 
     # when fastforward, we go to specific word/day/count quickly
-    fastforward = False    
+    fastforward = False
+
+    # Disabled logger for nudenet
+    logging.getLogger().disabled = True
 
     if args.unbuffered:
         sys.stdout = Unbuffered(sys.stdout)

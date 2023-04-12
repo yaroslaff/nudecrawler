@@ -17,11 +17,11 @@ then
 elif [ "$MODE" == "publish" ]
 then
     echo publish version $VERSION
-    python3 setup.py bdist_wheel sdist
-    twine upload dist/nudecrawler*$VERSION*
+    # python3 setup.py bdist_wheel sdist
+    # twine upload dist/nudecrawler*$VERSION*
     
-    echo build version $MODE
-    echo === $MODE
+    echo build version $VERSION
+    echo === $VERSION
     sudo docker build --build-arg VERSION=$VERSION -t yaroslaff/nudecrawler:$VERSION -f docker/Dockerfile .
 
     echo === LATEST
