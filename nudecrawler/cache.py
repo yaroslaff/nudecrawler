@@ -1,5 +1,6 @@
 import json
-
+import os
+import sys
 from .verbose import printv
 
 class ImageCache(object):
@@ -44,16 +45,24 @@ class ImageCache(object):
 
     def load(self, path):
         with open(path) as fh:
-            cache = json.load(fh)
+            try:
+                cache = json.load(fh)
+            except json.decoder.JSONDecodeError:
+                print('Invalid JSON in cache file', path)
+                print('Fix or delete file and restart')
+                sys.exit(1)
+
         
         self._url2sum = cache['_url2sum']
         self._sum2v = cache['_sum2v']
         print(f"Loaded {len(self._url2sum)} urls and {len(self._sum2v)} sums cache")
 
     def save_conditional(self, path, new=1):
+        tmppath = path + '.tmp'
         if self._new >= new:
             printv(f"Save cache with {self._new} updates")
-            self.save(path)
+            self.save(tmppath)
+            os.rename(tmppath, path)
 
     def save(self, path):
         data = dict(_url2sum = self._url2sum, _sum2v = self._sum2v)

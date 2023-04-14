@@ -41,3 +41,6 @@
 
 # 0.3.16
 - conditionally print number of new images
+
+# 0.3.17
+- Better cache saving: save cache to tmp file and rename, nice error if json damaged, --cache-save option
