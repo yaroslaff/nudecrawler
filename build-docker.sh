@@ -1,14 +1,11 @@
 #!/bin/bash
 
-echo $1
 MODE=${1:-dev}
-
-echo mode: $MODE
 
 # sudo docker build --build-arg VERSION=0.3.10 -t yaroslaff/nudecrawler:0.3.10 -f docker/Dockerfile .
 
 VERSION=`python -c 'import nudecrawler.version; print(nudecrawler.version.version)'`
-echo version: $VERSION
+echo $MODE version: $VERSION
 
 if [ "$MODE" == "dev" ]
 then
