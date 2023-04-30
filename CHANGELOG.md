@@ -44,3 +44,6 @@
 
 # 0.3.17
 - Better cache saving: save cache to tmp file and rename, nice error if json damaged, --cache-save option
+
+# 0.3.19
+- JSONL support for output log

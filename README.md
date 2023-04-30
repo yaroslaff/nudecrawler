@@ -125,7 +125,7 @@ Output options:
   --unbuffered, -b      Use unbuffered stdout
   --urls                Do not detect, just generate and print URLs
   --log LOG             print all precious treasures to this logfile
-  --bugreport           print all precious treasures to this logfile
+  --bugreport           send bugreport in case of problem (works only after agreed in github ticket)
   --workdir WORKDIR     Use all files (log, wordlist, cache) in this dir. def: .
 
 list-related options:
@@ -179,6 +179,20 @@ https://telegra.ph/Abakan
 This list (~300Kb, 11k urls) created from 1.5M words russian wordlist. There are only words which had at least one page with this title for last 10 days. So it has words 'Анжелика' or 'Анфиса' (beautiful woman names), but has no words 'Абажурами' or 'Абажуродержателем' (Because there are no pages with these titles on telegra.ph).
 
 Now you can use this file as wordlist (nudecrawler will detect it's already base URL, and will only append date to URL). 
+
+
+### JSON log files
+If `--log` filename ends with `.json` or `.jsonl`, nudecrawler will save log in JSONL format (each line is JSON for a page). Example:
+
+~~~
+{"status": "INTERESTING", "url": "https://telegra.ph/Masha-NN-NN-N", "total_images": 29, "nude_images": 17, "new_nude_images": 17, "nonnude_images": 12, "new_nonnude_images": 12, "total_video": 0}
+{"status": "INTERESTING", "url": "https://telegra.ph/Masha-NN-NN-N", "total_images": 3, "nude_images": 3, "new_nude_images": 3, "nonnude_images": 0, "new_nonnude_images": 0, "total_video": 0}
+~~~
+
+You can save almost all pages and then filter it with jq (get only interesting records, only interesting fields):
+~~~
+jq 'select(.nude_images>1 and .total_images>1) | {"url": .url, "total": .total_images}' < /tmp/n.json
+~~~
 
 
 ### Working with different nudity detectors

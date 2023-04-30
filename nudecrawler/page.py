@@ -14,6 +14,7 @@ import requests
 import hashlib
 import http
 import time
+import json
 
 
 from urllib.parse import urlparse
@@ -368,6 +369,15 @@ class Page:
         self._status = "???"
         self.log(self._status, makelog)        
         return self._status            
+
+    def as_json(self):
+        j = dict()
+        j['status'] = self.status()
+
+        for attr in ['url', 'total_images', 'nude_images', 'new_nude_images', 'nonnude_images', 'new_nonnude_images', 'total_video']:
+            j[attr] = getattr(self, attr)
+
+        return json.dumps(j)
 
     def __str__(self):
         
