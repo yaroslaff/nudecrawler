@@ -5,3 +5,5 @@ __pycache__/
 *.pyc
 .local/
 poetry.lock
+.venv
+
