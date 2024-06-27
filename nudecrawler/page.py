@@ -8,7 +8,7 @@ from .verbose import printv
 from .exceptions import *
 from .cache import cache
 
-from evalidate import evalidate, EvalException
+from evalidate import Expr, EvalException
 
 import requests
 import hashlib
@@ -93,8 +93,9 @@ class Page:
         self.content_length = None
 
         # can throw evalidate.EvalExpression here
-        node = evalidate(expr)
-        self._code = compile(node, '<user filter>', 'eval')
+        # node = Expr(expr).code
+        # self._code = compile(node, '<user filter>', 'eval')
+        self._code = Expr(expr).code
         
         printv("Processing:", self.url)
 
@@ -297,6 +298,7 @@ class Page:
                 self.do_detect_image(url)
             except Exception as e:
                 printv("Broken image:", url)
+                print(e)
             return
                 
         

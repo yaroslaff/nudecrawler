@@ -97,9 +97,9 @@ filter_methods = {
     "false": ("builtin", ":false"),
     "nudepy": ("builtin", ":nude"),
     "nudenetb": ("builtin", ":nudenet"),
-    "aid": ("image", "detect-image-aid.py"),
-    "nsfwapi": ("image", "detect-image-nsfw-api.py"),
-    "nudenet": ("image", "detect-image-nudenet.py")
+    "aid": ("image", "detect-image-aid"),
+    "nsfwapi": ("image", "detect-image-nsfw-api"),
+    "nudenet": ("image", "detect-image-nudenet")
 }
 
 def get_args(argv=None):
@@ -114,7 +114,8 @@ def get_args(argv=None):
 
     parser = argparse.ArgumentParser(description=f'Nudecrawler: Telegra.ph Spider {version}\nhttps://github.com/yaroslaff/nudecrawler', formatter_class=argparse.RawTextHelpFormatter)
 
-    def_expr = '(total_images>5 and new_nude_images>0) or total_video>0'
+    # def_expr = '(total_images>5 and new_nude_images>0) or total_video>0'
+    def_expr = 'nude_images > 0'
     def_workdir = os.getenv('NUDE_DIR', '.')
 
     def_total = int(os.getenv('NUDE_TOTAL', '1'))
@@ -425,7 +426,7 @@ def main():
 
     # fix arguments
     if not any([detect_image, detect_url, all_found]):        
-        print("# No filter, using built-in :nude by default")
+        print("# No nudity detector (--detect, --detect-url, --detect-image) given, using built-in --detect-image :nude by default")
         detect_image=':nude'
 
     nudecrawler.verbose.verbose = verbose

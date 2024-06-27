@@ -51,8 +51,9 @@ INTERESTING https://telegra.ph/sasha-grey-XXXXX
 ~~~
 
 ## Refine search/filtering
-Nudecrawler uses [evalidate](https://github.com/yaroslaff/evalidate) to filter results with python expression (`--expr`). With `-h` help will list all avaliable variables, like: `total_images nude_images nonnude_images new_nude_images new_nonnude_images new_total_images total_video`.
-Default value: `(total_images>5 and new_nude_images>0) or total_video>0`.
+Nudecrawler uses [evalidate](https://github.com/yaroslaff/evalidate) to filter results with python expression (`--expr`). With `-h` help will list all avaliable variables, like: `total_images`, `nude_images`, `nonnude_images`, `new_nude_images`, `new_nonnude_images`, `new_total_images`, `total_video`. `new_` variables are about new images (not found in cache). e.g. `--expr 'total_images>20 and new_nude_images>5'` will print only pages with more then 20 images and 5 nude images (not found in cache). This is good method to skip pages with duplicated content.
+
+Default value: `nude_images > 0`. 
 
 Use `-a`/`--all` to get some results ASAP (but later you may want to make some filtering)
 
@@ -194,7 +195,6 @@ You can save almost all pages and then filter it with jq (get only interesting r
 jq 'select(.nude_images>1 and .total_images>1) | {"url": .url, "total": .total_images}' < /tmp/n.json
 ~~~
 
-
 ### Working with different nudity detectors
 
 NudeCrawler can work with different nudity detectors and very easy to extend. Option `-a`/`--all` will disable detection totally, and it will report all pages.
@@ -206,6 +206,8 @@ There are two options to connect user filters, `--detect-image SCRIPT` and `--de
 if you will use `/bin/true` as script, it will detect all images as nude, and `/bin/false` will detect all images as non-nude.
 
 Scripts are usually installed to /usr/local/bin and if it's in $PATH, you do not need to specify full path to script, nudecrawler will find it in $PATH.
+
+
 
 #### detector: nsfw_api (recommended)
 
@@ -243,7 +245,7 @@ Using NudeNet does not requires docker, but you need to install `pip3 install -U
 
 Right way workaround is simple - after you will install NudeNet download model *manually* (no wget!) and place it to `~/.NudeNet/`
 
-Or you can download from my temporary site: `wget https://nudecrawler.netlify.app/classifier_model.onnx` (But I cannot promise it will be there forever) and put it to ~/.NudeNet .
+Or you can download from my temporary site: `wget -O ~/.NudeNet/classifier_model.onnx https://nudecrawler.netlify.app/classifier_model.onnx` (But I cannot promise it will be there forever) and put it to ~/.NudeNet .
 
 
 ##### Using NudeNet with NudeCrawler

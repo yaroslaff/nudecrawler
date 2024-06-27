@@ -1,29 +1,56 @@
-[tool.poetry]
-name = "nudecrawler"
-version = "0.1.0"
-description = "Crawl telegra.ph searching for nudes!"
-authors = ["Yaroslav Polyakov <yaroslaff@gmail.com>"]
+[build-system]
+requires = ["hatchling", "wheel"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = 'nudecrawler/version.py'
+
+[project]
+name="nudecrawler"
+authors = [
+  {name = "Yaroslav Polyakov", email = "yaroslaff@gmail.com"},
+]
+description = "Crawl telegra.ph searching for nudes!" 
 readme = "README.md"
-homepage = "https://github.com/yaroslaff/nudecrawler"
-repository = "https://github.com/yaroslaff/nudecrawler"
-license = "MIT"
+license = {text = "MIT License"}
 keywords = ["nsfw", "tits", "nudity-detection", "nsfw-recognition", "nudes", "onlyfans", "nude", "telegra-ph", "search", "crawler", "scraper", "spider", "scraping", "find", "web-scraping", "crawl", "scrape", "webscraping"]
 
+dynamic = [ "version" ]
+requires-python = ">= 3.9"
+dependencies = [
+    'beautifulsoup4>=4.12.0',
+    'transliterate>=1.10.2',
+    'pillow>=9.4.0',
+    'requests>=2.28.2',
+    'mudepy>=0.5.2',
+    'numpy<2.0.0',
+    'evalidate>=2.0.3',
+    'pytest>=7.2.2',
+    'nudenet>=2.0.9,<3.0.0',
+    'python-daemon>=3.0.1',
+    'python-dotenv>=1.0.0',
+    'flask'
+]
+classifiers=[
+    'Development Status :: 5 - Production/Stable',
+    'Environment :: Console',
+    'Intended Audience :: End Users/Desktop',
+    'License :: OSI Approved :: MIT License',
+    'Programming Language :: Python :: 3.9',
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-beautifulsoup4 = "^4.12.0"
-transliterate = "^1.10.2"
-pillow = "^9.4.0"
-requests = "^2.28.2"
-nudepy = "^0.5.1"
-evalidate = "^1.0.2"
-pytest = "^7.2.2"
-nudenet = "^2.0.9"
-python-daemon = "^3.0.1"
-python-dotenv = "^1.0.0"
 
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[project.urls]
+Homepage = "https://github.com/yaroslaff/nudecrawler"
+Repository = "https://github.com/yaroslaff/nudecrawler.git"
+"Bugz Tracker" = "https://github.com/yaroslaff/nudecrawler/issues"
+Changelog = "https://github.com/yaroslaff/nudecrawler/blob/master/CHANGELOG.md"
+
+[project.scripts]
+nudecrawler = "nudecrawler.scripts.nudecrawler:main"
+detect-image-aid = "nudecrawler.scripts.detect_image_aid:main"
+detect-image-nsfw-api = "nudecrawler.scripts.detect_image_nsfw_api:main"
+detect-image-nudenet = "nudecrawler.scripts.detect_image_nudenet:main"
+detect-server-nudenet = "nudecrawler.scripts.detect_server_nudenet:main"
+
