@@ -1,0 +1,10 @@
+beautifulsoup4 == 4.12.0
+transliterate == 1.10.2
+pillow == 9.4.0
+requests == 2.28.2
+nudepy == 0.5.1
+evalidate == 1.0.2
+pytest == 7.2.2
+nudenet == 2.0.9
+python-daemon == 3.0.1
+python-dotenv == 1.0.0
