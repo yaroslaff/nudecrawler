@@ -1,28 +1,29 @@
 import PIL
 from PIL import Image, UnidentifiedImageError
+from pprint import pprint
 
 import os
 from urllib.parse import urlparse
 import tempfile
 import sys
-import requests
+import onnxruntime
 import subprocess
-import nude
+# import nude
 from .exceptions import ProblemImage
 from .verbose import printv
 
 # detector_address = 'http://localhost:9191/api/v1/detect'
 
-nudenet_classifier = None
+nudenet_detector = None
 
 def _load():
     global nudenet_classifier
     try:
-        from nudenet import NudeClassifier
+        from nudenet import NudeDetector
         print("Loading nudenet classifier....")
-        nudenet_classifier = NudeClassifier()
-    except ModuleNotFoundError:
-        nudenet_classifier = None
+        nudenet_detector = NudeDetector()
+    except (ModuleNotFoundError, onnxruntime.capi.onnxruntime_pybind11_state.InvalidProtobuf):
+        nudenet_detector = None
 
 
 
@@ -74,8 +75,8 @@ class RemoteImage:
             return n.parse().result
         
         if script==':nudenet':
-            if nudenet_classifier is None:
-                print("built-in nudenet classified selected, but nudenet is not installed or model not loaded")
+            if nudenet_detector is None:
+                print("built-in nudenet detector selected, but nudenet is not installed or model not loaded")
                 sys.exit(1)
             return self.nudenet_detect()
 
@@ -86,8 +87,11 @@ class RemoteImage:
         return bool(rc.returncode)
 
     def nudenet_detect(self):
+
+        print("NUDENET DETECT")
+
         try:
-            r = nudenet_classifier.classify(self.path)
+            r = nudenet_detector.detect(self.path)
         except UnidentifiedImageError as e:
             print(f"Err: {self.url} {e}")
             result = {
@@ -102,7 +106,9 @@ class RemoteImage:
         if not r:
             printv(f"Err: {self.url} empty reply")
             return False
-        
+
+        pprint(r)
+
         if r[self.path]['unsafe'] > self.threshold:
             return True
         

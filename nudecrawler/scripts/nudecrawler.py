@@ -10,15 +10,17 @@ import shlex
 import shutil
 import subprocess
 import logging
-import requests
+
+
 from dotenv import load_dotenv
 
 import nudecrawler 
-from nudecrawler import Page, Unbuffered, load
-from nudecrawler.page import  get_processed_images, context_fields
-from nudecrawler.version import version
-from nudecrawler.cache import cache
-from nudecrawler.verbose import printv, bugreport
+from .. import Page, Unbuffered, load
+from ..page import  get_processed_images, context_fields
+from ..version import __version__
+from ..cache import cache
+# from ..verbose import printv
+from ..config import get_args
 import nudecrawler.tgru
 
 import transliterate.discover 
@@ -95,82 +97,12 @@ all_found = True
 filter_methods = {
     "true": ("builtin", ":true"),
     "false": ("builtin", ":false"),
-    "nudepy": ("builtin", ":nude"),
+    "mudepy": ("builtin", ":nude"),
     "nudenetb": ("builtin", ":nudenet"),
     "aid": ("image", "detect-image-aid"),
     "nsfwapi": ("image", "detect-image-nsfw-api"),
     "nudenet": ("image", "detect-image-nudenet")
 }
-
-def get_args(argv=None):
-
-    load_dotenv()  
-
-    def_detect = os.getenv('NUDE_DETECT')
-    def_cache = os.getenv('NUDE_CACHE')
-    def_log = os.getenv('NUDE_LOG')
-    def_stats = os.getenv('NUDE_STATS', '/tmp/nudecrawler-stats.txt')
-    def_unbuf = bool(os.getenv('NUDE_UNBUF'))
-
-    parser = argparse.ArgumentParser(description=f'Nudecrawler: Telegra.ph Spider {version}\nhttps://github.com/yaroslaff/nudecrawler', formatter_class=argparse.RawTextHelpFormatter)
-
-    # def_expr = '(total_images>5 and new_nude_images>0) or total_video>0'
-    def_expr = 'nude_images > 0'
-    def_workdir = os.getenv('NUDE_DIR', '.')
-
-    def_total = int(os.getenv('NUDE_TOTAL', '1'))
-    def_errors = 5
-    def_minsize=10
-
-    def_cache_save = 1000
-
-    methods_list = ', '.join(filter_methods.keys())
-
-    parser.add_argument('words', nargs='*')
-    parser.add_argument('-d', '--days', type=int, default=30)
-    # parser.add_argument('--nude', metavar='N', type=int, default=1, help='Interesting if N+ nude images')
-    # parser.add_argument('--video', metavar='N', type=int, default=1, help='Interesting if N+ video')
-    parser.add_argument('--url1', metavar="URL", help='process only one url')
-    parser.add_argument('-f', '--fails', type=int, default=5, help='stop searching next pages with same words after N failures')
-    parser.add_argument('--day', nargs=2, type=int, metavar=('MONTH', 'DAY'), help='Current date (default is today) example: --day 12 31')
-    parser.add_argument('--cache-save', type=int, metavar='N', default=def_cache_save, help=f'Save cache after N new images ({def_cache_save})')
-
-
-    g = parser.add_argument_group('Page filtering options')
-    parser.add_argument('--expr', '-e', metavar='EXPR', default=def_expr, 
-                        help=f'Interesting if EXPR is True. def: {def_expr!r}\nFields: ' + ' '.join(context_fields) )
-    parser.add_argument('--total', metavar='N', type=int, default=def_total, help=f'Boring if less then N total images ({def_total})')
-    parser.add_argument('--max-errors', metavar='N', type=int, default=def_errors, help=f'Max allowed errors on page ({def_errors})')
-    parser.add_argument('--min-content-length', metavar='N', type=int, default=None, help=f'Skip page if content-length less then N (try 5000 or higher)')
-
-    g = parser.add_argument_group('Image filtering options')
-    g.add_argument('-a', '--all', default=False, action='store_true', help='do not detect, print all found pages')
-    g.add_argument('--detect-image', metavar='SCRIPT', help='explicitly use this script to detect nudity on image file')
-    g.add_argument('--detect-url', metavar='SCRIPT', help='explicitly use this script to detect nudity on image URL')
-    g.add_argument('--detect', metavar='METHOD', default=def_detect, help=f'One of {methods_list}')
-    g.add_argument('--extensions', nargs='*', default=['.jpeg','.jpg', '.png'],help='interesting extensions (with dot, like .jpg)')
-    g.add_argument('--minsize', type=int, default=def_minsize,help=f'min size of image in Kb ({def_minsize})')
-    g.add_argument('--max-pictures', type=int, metavar='N', help=f'Detect only among first prefiltered N pictures')
-    g.add_argument('--cache', metavar='PATH', default=def_cache, help=f'path to cache file (will create if missing)')
-
-
-    g = parser.add_argument_group('Output options')
-    g.add_argument('-v', '--verbose', default=False, action='store_true', help='verbose')
-    g.add_argument('--unbuffered', '-b', default=def_unbuf, action='store_true', help='Use unbuffered stdout')
-    g.add_argument('--urls', default=False, action='store_true', help='Do not detect, just generate and print URLs')    
-    g.add_argument('--log', default=def_log, help='print all precious treasures to this logfile')
-    g.add_argument('--bugreport', default=False, action='store_true', help='send bugreport in case of problem (works only after agreed in github ticket)')
-    g.add_argument('--workdir', default=def_workdir, help=f'Use all files (log, wordlist, cache) in this dir. def: {def_workdir}')
-
-
-    g = parser.add_argument_group('list-related options')
-    g.add_argument('-w', '--wordlist', help='wordlist (urllist) file')
-    g.add_argument('--stats', metavar='STATS_FILE', default=def_stats, help='periodical statistics file')
-    g.add_argument('--resume', metavar='STATS_FILE', help='resume from STATS_FILE (other args are not needed)')
-    g.add_argument('--stop', type=int, metavar='NUM_IMAGES', help='stop (or --refresh) after N images processed (or little after)')
-    g.add_argument('--refresh', metavar=('SCRIPT', 'ARG'), nargs='+', help='run this refresh script every --stop NUM_IMAGES images')
-
-    return parser.parse_args(argv)
 
 
 
@@ -261,7 +193,9 @@ def save_stats(force=False):
     
 
 
-def check_word(word, day, fails, print_urls=False, resumecount=None):
+def check_word(word, day, fails, 
+               resumecount=None):
+
     global previous_content_length
 
     word = word.replace(' ','-').translate({ord('ь'): '', ord('ъ'): ''})
@@ -281,10 +215,6 @@ def check_word(word, day, fails, print_urls=False, resumecount=None):
     stats['resume']['month'] = day.month
     stats['resume']['day'] = day.day    
     stats['resume']['count'] = resumecount
-
-    if print_urls:
-        print(url)
-        return
 
     previous_content_length = None
 
@@ -343,7 +273,7 @@ def main():
         refresh
 
     words = None
-    args = get_args()
+    args = get_args(argv=None, methods_list=', '.join(filter_methods.keys()), context_fields=context_fields)
     sanity_check(args)
 
     # when fastforward, we go to specific word/day/count quickly
@@ -366,7 +296,7 @@ def main():
             abort(f"Missing status file {args.resume}")
 
         cmd = stats['cmd']
-        args = get_args(shlex.split(cmd)[1:])
+        args = get_args(argv = shlex.split(cmd)[1:])
         fastforward = True
     else:
         stats['cmd'] = shlex.join(sys.argv)
@@ -395,9 +325,6 @@ def main():
     stats['filter']['max_pictures'] = args.max_pictures
     stats['cache_path'] = args.cache
     stats['cache_save'] = args.cache_save    
-
-    if args.bugreport:
-        nudecrawler.verbose.send_bugreports = True
 
     if args.detect:
         try:
@@ -500,7 +427,7 @@ def main():
                 resumecount = None
             # stop fastforward
             fastforward=False
-            check_word(w, day, args.fails, print_urls = args.urls, resumecount=resumecount)
+            check_word(w, day, args.fails, resumecount=resumecount)
             
             days_tried += 1
             day = day - datetime.timedelta(days=1)

@@ -44,7 +44,7 @@ classifiers=[
 [project.urls]
 Homepage = "https://github.com/yaroslaff/nudecrawler"
 Repository = "https://github.com/yaroslaff/nudecrawler.git"
-"Bugz Tracker" = "https://github.com/yaroslaff/nudecrawler/issues"
+"Bug Tracker" = "https://github.com/yaroslaff/nudecrawler/issues"
 Changelog = "https://github.com/yaroslaff/nudecrawler/blob/master/CHANGELOG.md"
 
 [project.scripts]

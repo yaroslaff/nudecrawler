@@ -1,0 +1,41 @@
+#
+# nudecrawler config
+# 
+
+verbose=true
+unbuffered=false
+
+[depth]
+days = 5
+fails = 5
+
+[filter]
+all = false
+expr = '(total_images>5 and new_nude_images>0) or total_video>0'
+total = 10
+max_errors = 5
+min-content-length = 0
+
+[detect]
+detect = "mudepy"
+extensions = [ ".jpeg",".jpg", ".png" ]
+# min size of picture in kb to analyse
+minsize = 10
+max-pictures=0
+
+[detector]
+detect-image = ""
+detect-url = ""
+
+[cache]
+# Path to cache file (in json format)
+# cache = 
+cache-save = 1000
+
+[longrun]
+workdir = "/tmp/"
+log = "nudecrawler.jsonl"
+# wordlist = null
+stats = "nudecrawler-stats.txt"
+# stop = null
+# refresh = null
