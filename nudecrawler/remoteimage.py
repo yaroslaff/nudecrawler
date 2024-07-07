@@ -1,36 +1,24 @@
-import PIL
-from PIL import Image, UnidentifiedImageError
-from pprint import pprint
+from rich.pretty import pprint
 
 import os
+import requests
 from urllib.parse import urlparse
 import tempfile
 import sys
-import onnxruntime
 import subprocess
-# import nude
+import nude
 from .exceptions import ProblemImage
 from .verbose import printv
+from .nudenet import nudenet_detect
 
 # detector_address = 'http://localhost:9191/api/v1/detect'
 
-nudenet_detector = None
-
-def _load():
-    global nudenet_classifier
-    try:
-        from nudenet import NudeDetector
-        print("Loading nudenet classifier....")
-        nudenet_detector = NudeDetector()
-    except (ModuleNotFoundError, onnxruntime.capi.onnxruntime_pybind11_state.InvalidProtobuf):
-        nudenet_detector = None
-
-
 
 class RemoteImage:
-    def __init__(self, url):        
+    def __init__(self, url:str, page_url: str = None):        
         self.url = url
-        self.path = None
+        self.page_url = page_url
+        self.path = None        
         pr = urlparse(self.url)
         suffix = os.path.splitext(pr.path)[1]
         try:            
@@ -75,42 +63,11 @@ class RemoteImage:
             return n.parse().result
         
         if script==':nudenet':
-            if nudenet_detector is None:
-                print("built-in nudenet detector selected, but nudenet is not installed or model not loaded")
-                sys.exit(1)
-            return self.nudenet_detect()
+            return nudenet_detect(path=self.path, page_url=self.page_url)
 
         rc = subprocess.run([script, self.path], env=os.environ.copy())
         if rc.returncode >= 100:
             print("FATAL ERROR")
             sys.exit(1)        
         return bool(rc.returncode)
-
-    def nudenet_detect(self):
-
-        print("NUDENET DETECT")
-
-        try:
-            r = nudenet_detector.detect(self.path)
-        except UnidentifiedImageError as e:
-            print(f"Err: {self.url} {e}")
-            result = {
-                'status': 'ERROR',
-                'error': str(e)
-            }
-            return False
-        except Exception as e:
-            print(f"Got uncaught exception {type(e)}: {e}")
-        
-        # sometimes no exception, but empty response, e.g. when mp4 instead of image
-        if not r:
-            printv(f"Err: {self.url} empty reply")
-            return False
-
-        pprint(r)
-
-        if r[self.path]['unsafe'] > self.threshold:
-            return True
-        
-        return False
 

@@ -21,19 +21,18 @@ See below how to refine your searching and filtering.
 
 ### Alternative install
 ```
-pip3 install nudecrawler
+pipx install nudecrawler
 ```
-
-
-
 or, install right from git repo:
 ```
-pip3 install git+https://github.com/yaroslaff/nudecrawler
+pipx install git+https://github.com/yaroslaff/nudecrawler
 ```
+
+on old Linux without pipx, you may use pip3 (and better to install in virtualenv).
 
 ## Launch Nude Crawler!
 
-(I intentionally changed links, do not want to violate github policy)
+(I intentionally changed links in results, do not want to violate github policy)
 ~~~
 $ nudecrawler sasha-grey
 INTERESTING https://telegra.ph/sasha-grey-XXXXXXXX
@@ -50,7 +49,23 @@ INTERESTING https://telegra.ph/sasha-grey-XXXXX
   Nude: 6 non-nude: 3
 ~~~
 
-## Refine search/filtering
+By default, built-in [NudeNet](https://github.com/notAI-tech/NudeNet) detection (`--detect nudenetb`) is used (but nudecrawler has open architecture, natively supports few other detectors and you can easily connect it to any other detectors).
+
+For very impatient, add `-a` (skip nudity detection, print all found pages) and `-v` (verbose) options to skip detections.
+
+## Config file
+Most of nudecrawler options could be configured from config file [nudecrawler.toml](https://raw.githubusercontent.com/yaroslaff/nudecrawler/master/nudecrawler.toml). Nudecrawler looks for config file in following locations (first found file is used):
+-  `NUDECRAWLER_CONFIG` environment variable or `-c` / `--config` option
+-  `nudecrawler.toml` in current working directory
+-  `~/nudecrawler.toml`
+-  `/etc/nudecrawler.toml`
+
+options given in command line has higher priority.
+
+
+## Advanced usage
+
+### How to get only most interesting results
 Nudecrawler uses [evalidate](https://github.com/yaroslaff/evalidate) to filter results with python expression (`--expr`). With `-h` help will list all avaliable variables, like: `total_images`, `nude_images`, `nonnude_images`, `new_nude_images`, `new_nonnude_images`, `new_total_images`, `total_video`. `new_` variables are about new images (not found in cache). e.g. `--expr 'total_images>20 and new_nude_images>5'` will print only pages with more then 20 images and 5 nude images (not found in cache). This is good method to skip pages with duplicated content.
 
 Default value: `nude_images > 0`. 
@@ -59,7 +74,41 @@ Use `-a`/`--all` to get some results ASAP (but later you may want to make some f
 
 Consider using `--days`, `--total` to narrow/wider search.
 
-Also, `--cache`, `--max-pictures`, `--max-errors`, `--min-content-length` and `--minsize` to speed-up searching and discard some images/pages before wasting time on it.
+
+See also "How to use JSON log files".
+
+### How to search faster
+
+#### How to search faster: use cache 
+Nudecrawler use very simple cache in JSON format (with two mappings: image url to SHA1 hash of image, and hash to verdict). Sometimes this can speed-up searching greatly, because often some pages are very similar to each other and we can reuse verdict from cache, not doing heavy AI analysis of image and sometimes not even downloading image.
+
+config section
+~~~toml
+[cache]
+# Path to cache file
+cache = "/tmp/nccache.json"
+cache-save = 1
+~~~
+
+`cache-save` is how often we should save in-memory cache to file. With 1 it will be saved after each new file is added to cache. Set it to higher value like 100 or 1000 for very long runs, because saving big cache is slow.
+
+
+
+#### How to search faster: use prefiltering for images
+To speed-up processing, nudecrawler uses pre-filtering, HTTP HEAD request is performed for any image, and further processing is performed only if images passes basic check:
+- Image URL must return status 200
+- If server responds with Content-Length in response headers (telegra.ph uses Content-Length), it must be more then `--minsize` (minsize specified in Kb, and default value is 10Kb). This saves us from downloading/filtering icons or other very small images.
+
+
+#### How to search faster: discard useless pages before analysis
+
+Use argument `--total N` (section `[filter]`, option `total`) to analyse only pages which has more then N images (images discarded on pre-filtered stage do not count). So, if total is 20, images which has less then 20 big images will be discarded quickly.
+
+`--max-pictures` (section `[filter]`, option `max-pictures`) will analyse only first N prefiltered images. So, if page has 1000 images, but `max-pictures` is 10, only first 10 images will be analysed. (and variables like `nude_images` will never be higher then N)
+
+`--max-errors` (section `[filter]`, option `max-errors`) limits number of errors on page (like broken image links), if N errors happened, page is discarded and not processed further.
+
+`--min-content-length` (section `[filter]`, option `max-content-length`) skips pages with too small content-length.
 
 
 ### Long-time run
@@ -67,8 +116,8 @@ Also, `--cache`, `--max-pictures`, `--max-errors`, `--min-content-length` and `-
 #### Stop/Resume
 When working with worklists an --stats file, current status is periodically saved to this file. If you need to resume it, just use command `nudecrawler --resume PATH/TO/stats.json`
 
-#### Memory leaking in containers
-You may check container memory usage with `sudo docker stats` or `sudo docker stats --no-stream`. Often containers consume more and more memory with time, leading to out-of-memory in the end. To prevent this problem use combination of `--stop` and `--refresh` like `--stop 1000 --refresh bin/refresh-nsfw-api.sh` this will call refresh script every 1000 images. Refresh script should stop current container and start it again. See source of refresh-nsfw-api.sh for example, it's very simple.
+#### Memory leaking in containers (if using detectors in docker containers)
+You may check container memory usage with `sudo docker stats` or `sudo docker stats --no-stream`. Often containers consume more and more memory with time, leading to out-of-memory in the end. To prevent this problem use combination of `--stop` and `--refresh` like `--stop 1000 --refresh refresh-nsfw-api.sh` this will call refresh script every 1000 images. Refresh script should stop current container and start it again. See source of [refresh-nsfw-api.sh](https://raw.githubusercontent.com/yaroslaff/nudecrawler/master/run/refresh-nsfw-api.sh) for example, it's very simple. This shell script is not installed when you install nudecrawler python package.
 
 ### Benchmarking/test
 Tested on same page, different technologies (default thresholds) gives different results.
@@ -82,66 +131,10 @@ Page B: *sasha grey* from 18 Apr (16 images, 12 clearly nsfw, 4 are clearly safe
 |detect-image-aid (docker)       | 124s   | 10      | 28s    | 6 (false negatives)                |
 |detect-image-nudenet  (scripts) | 90s    | 57      | 24s    | 12                                 |
 
-## Options
-~~~
-usage: nudecrawler [-h] [-d DAYS] [--url1 URL] [-f FAILS] [--day MONTH DAY] [--expr EXPR] [--total N] [--max-errors N] [--min-content-length N] [-a] [--detect-image SCRIPT]
-                   [--detect-url SCRIPT] [--detect METHOD] [--extensions [EXTENSIONS ...]] [--minsize MINSIZE] [--max-pictures N] [--cache PATH] [-v] [--unbuffered] [--urls] [--log LOG]
-                   [--bugreport] [--workdir WORKDIR] [-w WORDLIST] [--stats STATS_FILE] [--resume STATS_FILE] [--stop NUM_IMAGES] [--refresh SCRIPT [ARG ...]]
-                   [words ...]
-
-Nudecrawler: Telegra.ph Spider 0.3.6
-https://github.com/yaroslaff/nudecrawler
-
-positional arguments:
-  words
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -d DAYS, --days DAYS
-  --url1 URL            process only one url
-  -f FAILS, --fails FAILS
-                        stop searching next pages with same words after N failures
-  --day MONTH DAY       Current date (default is today) example: --day 12 31
-  --expr EXPR, -e EXPR  Interesting if EXPR is True. def: '(total_images>5 and new_nude_images>0) or total_video>0'
-                        Fields: total_images nude_images nonnude_images new_nude_images new_nonnude_images new_total_images total_video
-  --total N             Boring if less then N total images (5)
-  --max-errors N        Max allowed errors on page ()
-  --min-content-length N
-                        Interesting if N+ total images (5)
-
-Image filtering options:
-  -a, --all             do not detect, print all found pages
-  --detect-image SCRIPT
-                        explicitly use this script to detect nudity on image file
-  --detect-url SCRIPT   explicitly use this script to detect nudity on image URL
-  --detect METHOD       One of true, false, nudepy, nudenetb, aid, nsfwapi, nudenet
-  --extensions [EXTENSIONS ...]
-                        interesting extensions (with dot, like .jpg)
-  --minsize MINSIZE     min size of image in Kb (10)
-  --max-pictures N      Detect only among first prefiltered N pictures
-  --cache PATH          path to cache file (will create if missing)
-
-Output options:
-  -v, --verbose         verbose
-  --unbuffered, -b      Use unbuffered stdout
-  --urls                Do not detect, just generate and print URLs
-  --log LOG             print all precious treasures to this logfile
-  --bugreport           send bugreport in case of problem (works only after agreed in github ticket)
-  --workdir WORKDIR     Use all files (log, wordlist, cache) in this dir. def: .
-
-list-related options:
-  -w WORDLIST, --wordlist WORDLIST
-                        wordlist (urllist) file
-  --stats STATS_FILE    periodical statistics file
-  --resume STATS_FILE   resume from STATS_FILE (other args are not needed)
-  --stop NUM_IMAGES     stop (or --refresh) after N images processed (or little after)
-  --refresh SCRIPT [ARG ...]
-                        run this refresh script every --stop NUM_IMAGES images
-~~~
-
-## Advanced Usage
 
 ### Working with wordlists
+While you can run nudecrawler to search few words like `nudecrawler "sasha grey" "Belle Delphine" Amouranth`, you may want to run it for long time with very long wordlist from file. 
+
 In simplest case (not so big wordlist), just use `-w`, like:
 ~~~shell
 # verbose, no-filtering (report all pages), use wordlist
@@ -153,7 +146,7 @@ If you have very large wordlist, better to pre-check it with faster tool like [b
 Convert wordlist to urllist
 ~~~shell
 # only generate URLs 
-nudecrawler -v -w wordlist.txt --urls > urls.txt
+nudecrawler-makeurls -w wordlist.txt > urls.txt
 ~~~
 Verify it with [bulk-http-check](https://github.com/yaroslaff/bulk-http-check) and get output file with this format:
 ~~~
@@ -182,7 +175,7 @@ This list (~300Kb, 11k urls) created from 1.5M words russian wordlist. There are
 Now you can use this file as wordlist (nudecrawler will detect it's already base URL, and will only append date to URL). 
 
 
-### JSON log files
+### How to use JSON log files
 If `--log` filename ends with `.json` or `.jsonl`, nudecrawler will save log in JSONL format (each line is JSON for a page). Example:
 
 ~~~
@@ -271,9 +264,3 @@ sudo docker run -v /tmp/run:/work yaroslaff/nudecrawler nudecrawler -a Eva "Sash
 If you specify files for docker (like `-w`, `--stats`, `--resume`, `--log`, `--cache`) path will be modified starting from /work. e.g. `-w urls.txt` will be `-w /work/urls.txt` which is /tmp/run/urls.txt on host.
 
 
-### Little bit about internals
-
-#### Prefiltering
-To speed-up processing, nudecrawler uses pre-filtering, HTTP HEAD request is performed for any image, and further processing is performed only if images passes basic check:
-- Image URL must return status 200
-- If server responds with Content-Length in response headers (telegra.ph uses Content-Length), it must be more then `--minsize` (minsize specified in Kb, and default value is 10Kb). This saves us from downloading/filtering icons.

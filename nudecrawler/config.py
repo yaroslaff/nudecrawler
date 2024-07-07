@@ -1,11 +1,15 @@
 import toml
 import argparse
 import os
+import sys
 from dotenv import load_dotenv
 from .version import __version__
 from rich.pretty import pprint
 from collections import ChainMap
 import collections.abc
+
+config_path = None
+config = dict()
 
 def get_config_path():
 
@@ -20,7 +24,7 @@ def get_config_path():
     config_path_list = [
         os.getenv('NUDECRAWLER_CONFIG'),
         'nudecrawler.toml',
-        '~/nudecrawler.toml',
+        os.path.expanduser('~/nudecrawler.toml'),
         '/etc/nudecrawler.toml'
     ]    
 
@@ -31,33 +35,39 @@ def get_config_path():
     return args.config
 
 
-def get_args(argv: str, methods_list: list[str], context_fields: list):
+def read_config():
+    global config_path
 
     load_dotenv()  
 
     config_path = get_config_path()
 
     try:
+        assert config_path is not None
         with open(config_path, 'r') as f:
-            config = toml.load(f)
-    except FileNotFoundError:
-        config = dict()
+            user_config = toml.load(f)
+    except AssertionError:
+        print("No config files found, using default")
+        user_config = dict()
+    except toml.decoder.TomlDecodeError as e:
+        print(f"Error in toml file {config_path}: {e}")
+        sys.exit(1)
 
-    config = hydrate_config(config)
-    pprint(config)
+    hydrate_config(user_config)
 
-    print(config["cache"]["cache"])
+
+def get_args(argv: str, methods_list: list[str], context_fields: list):
+
+    read_config()
 
     parser = argparse.ArgumentParser(description=f'Nudecrawler: Telegra.ph Spider {__version__}\nhttps://github.com/yaroslaff/nudecrawler', formatter_class=argparse.RawTextHelpFormatter)
 
     # 
-
-    
     parser.add_argument('words', nargs='*')
     parser.add_argument('--url1', metavar="URL", help='process only one url')
     parser.add_argument('--day', nargs=2, type=int, metavar=('MONTH', 'DAY'), help='Current date (default is today) example: --day 12 31')
     parser.add_argument('-c', '--config', default=config_path, help=f'Path to nudecrawler.toml, ({config_path})')
-    parser.add_argument('-v', '--verbose', default=["verbose"], action='store_true', help='verbose')
+    parser.add_argument('-v', '--verbose', default=config['verbose'], action='store_true', help='verbose')
     parser.add_argument('--unbuffered', '-b', default=config["unbuffered"], action='store_true', help='Use unbuffered stdout')
 
 
@@ -71,14 +81,16 @@ def get_args(argv: str, methods_list: list[str], context_fields: list):
     g.add_argument('--expr', '-e', metavar='EXPR', default=config['filter']['expr'], 
                         help=f'Interesting if EXPR is True. def: { config["filter"]["expr"] }\nFields: ' + ' '.join(context_fields) )
     g.add_argument('--total', metavar='N', type=int, default=config['filter']['total'], help=f'Skip detections if less then N total images ({config["filter"]["total"]})')
-    g.add_argument('--max-errors', metavar='N', type=int, default=config['filter']['max_errors'], help=f'Max allowed errors on page ({config["filter"]["max_errors"]})')
+    g.add_argument('--max-errors', metavar='N', type=int, default=config['filter']['max-errors'], help=f'Max allowed errors on page ({config["filter"]["max_errors"]})')
     g.add_argument('--min-content-length', metavar='N', type=int, default=config['filter']['min-content-length'], help=f'Skip page if content-length less then N (try 5000 or higher)')
 
     g = parser.add_argument_group('Image detection options')
     g.add_argument('--detect', metavar='METHOD', default=config["detect"]["detect"], help=f'One of {methods_list} ({config["detect"]["detect"]})')
     g.add_argument('--extensions', nargs='*', default=config['detect']['extensions'],help='interesting extensions (with dot, like .jpg)')
     g.add_argument('--minsize', type=int, default=config['detect']['minsize'],help=f'min size of image in Kb ({config["detect"]["minsize"]})')
-    g.add_argument('--max-pictures', type=int, metavar='N', default=config["detect"]["max-pictures"], help=f'Detect only among first prefiltered N pictures')
+    g.add_argument('--max-pictures', type=int, metavar='N', 
+                   default=config["detect"]["max-pictures"], 
+                   help=f'Detect only among first prefiltered N pictures')
 
 
     g = parser.add_argument_group('Cache')
@@ -103,7 +115,8 @@ def get_args(argv: str, methods_list: list[str], context_fields: list):
 
     return parser.parse_args(argv)
 
-def hydrate_config(conf: dict):
+def hydrate_config(user_conf: dict):
+    global config
     
     def update(d, u):
         """ recursive dict update """
@@ -114,6 +127,11 @@ def hydrate_config(conf: dict):
                 d[k] = v
         return d
 
+    config.update(get_default_config())
+
+    update(config, user_conf)
+
+def get_default_config():
     
     def_config = {
         'verbose': False,
@@ -126,11 +144,11 @@ def hydrate_config(conf: dict):
             'all': False,
             'expr': 'nude_images > 0',
             'total': int(os.getenv('NUDE_TOTAL', '1')),
-            'max_errors': 5,
+            'max-errors': 5,
             'min-content-length': None
         },
         'detect': {
-            'detect': os.getenv('NUDE_DETECT','mudepy'),
+            'detect': os.getenv('NUDE_DETECT','nudenetb'),
             'extensions': ['.jpeg','.jpg', '.png'],
             'minsize': 10,
             'max-pictures': None
@@ -150,7 +168,22 @@ def hydrate_config(conf: dict):
             'stats': os.getenv('NUDE_STATS', '/tmp/nudecrawler-stats.txt'),
             'stop': None,
             'refresh': None
+        },
+        'nudenet': {
+            'FEMALE_BREAST_EXPOSED': 0.5,
+            'BUTTOCKS_EXPOSED': 0.5,
+            'FEMALE_GENITALIA_EXPOSED': 0.5,
+            'MALE_GENITALIA_EXPOSED': 0.5,
+            'ANUS_EXPOSED': 0.5,
+            'ignore': ['FEMALE_BREAST_COVERED', 'BELLY_EXPOSED', 'FEMALE_GENITALIA_COVERED', 
+                       'FACE_FEMALE', 'FACE_MALE', 
+                       'MALE_BREAST_EXPOSED', 'FEET_EXPOSED', 'BELLY_COVERED', 'BELLY_EXPOSED', 'FEET_COVERED',
+                        'ARMPITS_COVERED', 'ARMPITS_EXPOSED', 'ANUS_COVERED', 'FEMALE_BREAST_COVERED', 
+                        'BUTTOCKS_COVERED']
+
+
+
         }
     }
 
-    return update(def_config, conf)
+    return def_config

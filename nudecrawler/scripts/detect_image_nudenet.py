@@ -11,6 +11,7 @@ import requests
 from nudecrawler.exceptions import *
 from nudecrawler.localimage import basic_check
 from urllib.parse import urljoin
+from rich.pretty import pprint
 
 # from nudenet import NudeClassifier
 
@@ -29,11 +30,11 @@ def detect_nudity(path, address, threshold):
         print("or add -a to skip filtering")
         sys.exit(100)
     
-    if r.json()['status']=='ERROR':
-        print(f"Error for page {os.getenv('NUDECRAWLER_PAGE_URL','')}: {r.json()['error']}")
-        return 0
+    rj = r.json()
 
-    return int(r.json()['unsafe'] > threshold)
+    # since verdict: True=1=nude we invert it to get nude = exit code 0
+
+    return int(not rj['verdict'])
     
 def main():
     image_path = sys.argv[1]

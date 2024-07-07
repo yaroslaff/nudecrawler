@@ -10,12 +10,12 @@ import shlex
 import shutil
 import subprocess
 import logging
-
+from rich.pretty import pprint
 
 from dotenv import load_dotenv
 
 import nudecrawler 
-from .. import Page, Unbuffered, load
+from .. import Page, Unbuffered
 from ..page import  get_processed_images, context_fields
 from ..version import __version__
 from ..cache import cache
@@ -147,7 +147,7 @@ def analyse(url):
                 else:
                     print(p, file=fh)
     
-    if p.status().startswith("INTERESTING") or verbose:
+    if p.status().startswith("INTERESTING") or verbose:        
         print(p)
 
     if p.status().startswith("IGNORED"):
@@ -275,7 +275,6 @@ def main():
     words = None
     args = get_args(argv=None, methods_list=', '.join(filter_methods.keys()), context_fields=context_fields)
     sanity_check(args)
-
     # when fastforward, we go to specific word/day/count quickly
     fastforward = False
 
@@ -307,6 +306,7 @@ def main():
             if old is not None:                
                 new = os.path.join(args.workdir, old)
                 setattr(args, attr, new)
+
 
     # nude = args.nude
     # video = args.video
@@ -374,9 +374,7 @@ def main():
         else:
             print(f"# No cache file {stats['cache_path']}, start with empty cache")
 
-    # processing could start here
-
-    nudecrawler.load()
+    # processing could start here    
 
     # --url1 
     if args.url1:

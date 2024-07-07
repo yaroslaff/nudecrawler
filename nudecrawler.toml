@@ -2,7 +2,7 @@
 # nudecrawler config
 # 
 
-verbose=true
+verbose=false
 unbuffered=false
 
 [depth]
@@ -12,16 +12,17 @@ fails = 5
 [filter]
 all = false
 expr = '(total_images>5 and new_nude_images>0) or total_video>0'
-total = 10
+total = 1
 max_errors = 5
 min-content-length = 0
 
 [detect]
-detect = "mudepy"
+# detect = "mudepy"
+detect = "nudenetb"
 extensions = [ ".jpeg",".jpg", ".png" ]
 # min size of picture in kb to analyse
 minsize = 10
-max-pictures=0
+max-pictures=10
 
 [detector]
 detect-image = ""
@@ -30,7 +31,10 @@ detect-url = ""
 [cache]
 # Path to cache file (in json format)
 # cache = 
-cache-save = 1000
+# cache-save = 1000
+
+cache = "/tmp/nccache.json"
+cache-save = 1
 
 [longrun]
 workdir = "/tmp/"
@@ -39,3 +43,15 @@ log = "nudecrawler.jsonl"
 stats = "nudecrawler-stats.txt"
 # stop = null
 # refresh = null
+
+[nudenet]
+FEMALE_BREAST_EXPOSED=0.5
+BUTTOCKS_EXPOSED=0.2
+FEMALE_GENITALIA_EXPOSED=0.5
+MALE_GENITALIA_EXPOSED=0.5
+ANUS_EXPOSED=0.5
+ignore = ['FEMALE_BREAST_COVERED', 'BELLY_EXPOSED', 'FEMALE_GENITALIA_COVERED', 
+            'FACE_FEMALE', 'FACE_MALE', 
+            'MALE_BREAST_EXPOSED', 'FEET_EXPOSED', 'BELLY_COVERED', 'BELLY_EXPOSED', 'FEET_COVERED',
+            'ARMPITS_COVERED', 'ARMPITS_EXPOSED', 'ANUS_COVERED', 'FEMALE_BREAST_COVERED', 
+            'BUTTOCKS_COVERED']

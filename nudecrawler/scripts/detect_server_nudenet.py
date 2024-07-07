@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from flask import Flask, request
-from nudenet import NudeClassifier
+from nudenet import NudeDetector
 import os
 import sys
 import daemon
@@ -10,9 +10,10 @@ from daemon import pidfile
 import argparse
 import signal
 from PIL import UnidentifiedImageError
+from rich.pretty import pprint
 
-
-classifier = None
+from ..config import read_config, get_config_path
+from ..nudenet import nudenet_detect
 
 app = Flask(__name__)
 
@@ -27,10 +28,9 @@ def ping():
 def detect():
     path = request.json['path']
     page = request.json['page']
-    
-    print("....", page)
+
     try:
-        r = classifier.classify(path)
+        verdict = nudenet_detect(path=path, page_url=page)
     except UnidentifiedImageError as e:
         print(f"Err: {page} {e}")
         result = {
@@ -41,66 +41,27 @@ def detect():
     except Exception as e:
         print(f"Got uncaught exception {type(e)}: {e}")
     
-
-    # sometimes no exception, but empty response, e.g. when mp4 instead of image
-    if not r:
-        print(f"Err: {page} empty reply")
-        result = {
-            'status': 'ERROR',
-            'error': "empty reply from classifier"
-        }
-        return result
-    
-    
-    if r[path]['unsafe'] > 0.5:
-        verdict="UNSAFE"
-    else:
-        verdict="safe"
-
-    r[path]['status'] = 'OK'
-    print(f'{verdict} ({r[path]["unsafe"]:.2f}) {page}')
-    return r[path]
+    pprint(f'{page}: {verdict}')
+    return dict(verdict=verdict, page=page)
 
 
 def get_args():
+    config_path = get_config_path()
     parser = argparse.ArgumentParser('Daemonical REST API for NudeNet')
-    parser.add_argument("--port", type=int, default=5000)
-    parser.add_argument("-d", '--daemon', action='store_true', default=False)
+    parser.add_argument('--port', type=int, default=5000)
+    parser.add_argument('-d', '--daemon', action='store_true', default=False)
+    parser.add_argument('-c', '--config', default=config_path, help=f'Path to nudecrawler.toml, ({config_path})')
     parser.add_argument('--kill', action='store_true', default=False)
     parser.add_argument('--pidfile', default=pidfile_path)
     return parser.parse_args()
 
-def sanity_check():
-    def print_help(msg):
-        print(f"{msg}Download original file from https://nudecrawler.netlify.app/classifier_model.onnx\n" \
-              "Or from https://github.com/notAI-tech/NudeNet", file=sys.stderr)
-        
-    min_sane_size = 10*1024*1024
-    path = os.path.expanduser('~/.NudeNet/classifier_model.onnx')
-
-    if not os.path.exists(path):
-        print_help(f"Missing {path}\n")
-        return False
-
-    sz = os.stat(path).st_size
-    
-    # check if size is OK. Normally its 80M, we check if it's at least 10M
-    if sz <= min_sane_size:
-        print_help(f"Too small file ({sz}) {path}\n")
-        return False
-    
-    return True
-
-
 def main():
     global classifier
     global pidfile
+
+
+    read_config()
     args = get_args()
-    if not sanity_check():
-        sys.exit(1)
-    
-    print("load classified")
-    classifier = NudeClassifier()
 
     if args.kill:
         try:

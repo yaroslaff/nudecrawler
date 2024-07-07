@@ -142,7 +142,7 @@ class Page:
 
     def log(self, msg, really=True):
         if not really:
-            return        
+            return
         self._log.append(msg)
 
     def check_all(self):
@@ -176,8 +176,8 @@ class Page:
             self.ignore(f'Too many minor errors: {self.max_errors}')            
 
     def prefilter_image(self, url):
-        """ True is we should check, False if we can ignore this image"""
-        
+        """ True is we should check, False if we can ignore this image"""        
+
         if self._ignore:
             return False
         verdict = cache.url2v(url)
@@ -185,12 +185,14 @@ class Page:
         if verdict is not None:
             # self.log(f'{url} passed prefilter because cached')
             return True 
-        
+
         path = urlparse(url).path
         ext = os.path.splitext(path)[1]
+
         if ext not in self.image_extensions:            
             self.log(f"{url} bad extension, ignore")
-            return False
+            return False        
+
         try:
             r = requests.head(url, timeout=1)
         except requests.exceptions.RequestException as e:            
@@ -385,7 +387,7 @@ class Page:
         
         text = ''
         
-        text += f'{self.status()} {self.url} ({self.check_time}s)\n'
+        text += f'{self.status()} {self.url}{f" ({self.check_time} sec)" if isinstance(self.check_time, float) else ""}\n'
 
         if self.all_found:
             text += f"  Total images: {self.total_images}\n"
