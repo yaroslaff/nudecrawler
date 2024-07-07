@@ -23,9 +23,10 @@ def get_config_path():
 
     config_path_list = [
         os.getenv('NUDECRAWLER_CONFIG'),
+        '/run/nudecrawler.toml',
         'nudecrawler.toml',
         os.path.expanduser('~/nudecrawler.toml'),
-        '/etc/nudecrawler.toml'
+        '/etc/nudecrawler.toml',
     ]    
 
     def_config_path = first_file(config_path_list)
