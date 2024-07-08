@@ -56,7 +56,7 @@ For very impatient, add `-a` (skip nudity detection, print all found pages) and 
 ## Config file
 Most of nudecrawler options could be configured from config file [nudecrawler.toml](https://raw.githubusercontent.com/yaroslaff/nudecrawler/master/nudecrawler.toml). Nudecrawler looks for config file in following locations (first found file is used):
 -  `NUDECRAWLER_CONFIG` environment variable or `-c` / `--config` option
--  `/run/nudecrawler.toml` (This used when working inside docker contaner and host directory mounted as /run/)
+-  `/work/nudecrawler.toml` (This used when working inside docker contaner and host directory mounted as /run/)
 -  `nudecrawler.toml` in current working directory
 -  `~/nudecrawler.toml`
 -  `/etc/nudecrawler.toml`
