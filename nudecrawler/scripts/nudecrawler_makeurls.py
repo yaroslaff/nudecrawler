@@ -12,7 +12,8 @@ def process_word(word, counter=0):
         trans_word = transliterate.translit(word, 'tgru', reversed=True)
         baseurl=f'https://telegra.ph/{trans_word}'
 
-    print("base:", baseurl)
+
+    baseurl = baseurl.replace(" ", "-")
 
     date = datetime.datetime.strptime("2024-01-01", "%Y-%m-%d")
     for d in range(0, 365):
@@ -32,15 +33,20 @@ def get_args():
 
     parser.add_argument('-w', '--wordlist', help='wordlist txt file to check')
     parser.add_argument('-c', '--count', type=int, default=0, help='max value for counter (3rd number in filename)')
+    parser.add_argument('WORD', nargs='*', help='words as arguments (if no --wordlist)')
 
     return parser.parse_args()
 
 def main():
     args = get_args()
 
-    with open(args.wordlist, 'r') as fh:
-        words = [line.rstrip() for line in fh]
-    
+    if args.wordlist:
+        counter = args.count
+        with open(args.wordlist, 'r') as fh:
+            words = [line.rstrip() for line in fh]
+    else:
+        words = args.WORD
+
     for w in words:
         process_word(w, counter=args.count)
 

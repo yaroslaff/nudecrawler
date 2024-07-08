@@ -112,6 +112,23 @@ Use argument `--total N` (section `[filter]`, option `total`) to analyse only pa
 `--min-content-length` (section `[filter]`, option `max-content-length`) skips pages with too small content-length.
 
 
+### How to search very fast (without detection)
+If you want just to find existing pages in telegra.ph (and do not want to detect nudity on images there or any other filtering) you can use `nudecrawler-makeurls` utility in combination with [bulk-http-check](https://github.com/yaroslaff/bulk-http-check)
+
+~~~
+ $ time nudecrawler-makeurls "sasha grey" -c 10 | bulk-http-check -n 100 |grep "200$"
+https://telegra.ph/sasha-grey-01-12 OK 200
+https://telegra.ph/sasha-grey-01-14 OK 200
+...
+https://telegra.ph/sasha-grey-12-12 OK 200
+
+real	0m5.089s
+user	0m1.079s
+sys	0m0.444s
+~~~
+
+5 seconds to find all (61) telegra.ph pages with title "Sasha Grey".
+
 ### Long-time run
 
 #### Stop/Resume
