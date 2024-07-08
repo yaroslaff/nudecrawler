@@ -136,7 +136,7 @@ def get_default_config():
     
     def_config = {
         'verbose': False,
-        'unbuffered': False,
+        'unbuffered': True,
         'depth': {
             'days': 10,
             'fails': 5,

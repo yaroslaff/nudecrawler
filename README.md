@@ -276,7 +276,7 @@ Repository includes Dockerfile. Use `sudo docker build --build-arg VERSION=0.3.1
 Running docker container (example):
 ~~~
 mkdir /tmp/run
-sudo docker run -v /tmp/run:/work yaroslaff/nudecrawler nudecrawler -a Eva "Sasha Grey" "Belle Delphine" Amouranth
+sudo docker run --name nudecrawler --rm -v /tmp/run:/work yaroslaff/nudecrawler nudecrawler -a Eva "Sasha Grey" "Belle Delphine" Amouranth
 ~~~
 
 If you specify files for docker (like `-w`, `--stats`, `--resume`, `--log`, `--cache`) path will be modified starting from /work. e.g. `-w urls.txt` will be `-w /work/urls.txt` which is /tmp/run/urls.txt on host.
