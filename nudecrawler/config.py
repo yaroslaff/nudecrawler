@@ -23,7 +23,7 @@ def get_config_path():
 
     config_path_list = [
         os.getenv('NUDECRAWLER_CONFIG'),
-        '/run/nudecrawler.toml',
+        '/work/nudecrawler.toml',
         'nudecrawler.toml',
         os.path.expanduser('~/nudecrawler.toml'),
         '/etc/nudecrawler.toml',
@@ -65,7 +65,7 @@ def get_args(argv: str, methods_list: list[str], context_fields: list):
 
     # 
     parser.add_argument('words', nargs='*')
-    parser.add_argument('--url1', metavar="URL", help='process only one url')
+    parser.add_argument('--url', metavar="URL", help='process only one url')
     parser.add_argument('--day', nargs=2, type=int, metavar=('MONTH', 'DAY'), help='Current date (default is today) example: --day 12 31')
     parser.add_argument('-c', '--config', default=config_path, help=f'Path to nudecrawler.toml, ({config_path})')
     parser.add_argument('-v', '--verbose', default=config['verbose'], action='store_true', help='verbose')

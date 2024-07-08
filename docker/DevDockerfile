@@ -4,14 +4,15 @@ WORKDIR /
 # RUN apt update && \
 #    apt -y install python3-pip && \
 RUN   pip3 install -U pip nudenet flask python-daemon evalidate transliterate pytest nudepy python-dotenv bs4 pillow requests python-dotenv && \
-      mkdir /root/.NudeNet && \
-      wget -q https://nudecrawler.netlify.app/classifier_model.onnx -O /root/.NudeNet/classifier_model.onnx && \
       mkdir /work
+      #mkdir /root/.NudeNet && \
+      #wget -q https://nudecrawler.netlify.app/classifier_model.onnx -O /root/.NudeNet/classifier_model.onnx && \
+      
 ADD docker/.env /
 
 
 ADD . nudecrawler/
-RUN cd nudecrawler && ls -l && python3 setup.py bdist_wheel && pip3 install dist/nudecrawler*whl
+RUN cd nudecrawler && ls -l && pip3 install .
 # RUN pip3 install nudecrawler==$VERSION
 
 

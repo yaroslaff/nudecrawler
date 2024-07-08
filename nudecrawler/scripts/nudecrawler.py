@@ -275,6 +275,11 @@ def main():
     words = None
     args = get_args(argv=None, methods_list=', '.join(filter_methods.keys()), context_fields=context_fields)
     sanity_check(args)
+
+    if args.verbose:
+        pprint(args)
+
+
     # when fastforward, we go to specific word/day/count quickly
     fastforward = False
 
@@ -376,9 +381,9 @@ def main():
 
     # processing could start here    
 
-    # --url1 
-    if args.url1:
-        p = analyse(args.url1)
+    # --url
+    if args.url:
+        p = analyse(args.url)
         print(p.status())
         for msg in p._log:
             print(" ", msg)
@@ -386,7 +391,6 @@ def main():
 
     ## wordlist
     if args.wordlist:
-        stats_file = args.stats
         with open(args.wordlist) as fh:
             words = [line.rstrip() for line in fh]
     
@@ -394,10 +398,11 @@ def main():
         words = args.words
     
     if not words:
-        print("Need either --url1 URL or words like 'nude' or -w wordlist.txt")
+        print("Need either --url URL or words like 'nude' or -w wordlist.txt")
         sys.exit(1)
 
     logfile = args.log
+    stats_file = args.stats
 
     for w in words:
         if fastforward and not matched_resume:
