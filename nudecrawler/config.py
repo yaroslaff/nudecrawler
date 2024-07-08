@@ -82,7 +82,7 @@ def get_args(argv: str, methods_list: list[str], context_fields: list):
     g.add_argument('--expr', '-e', metavar='EXPR', default=config['filter']['expr'], 
                         help=f'Interesting if EXPR is True. def: { config["filter"]["expr"] }\nFields: ' + ' '.join(context_fields) )
     g.add_argument('--total', metavar='N', type=int, default=config['filter']['total'], help=f'Skip detections if less then N total images ({config["filter"]["total"]})')
-    g.add_argument('--max-errors', metavar='N', type=int, default=config['filter']['max-errors'], help=f'Max allowed errors on page ({config["filter"]["max_errors"]})')
+    g.add_argument('--max-errors', metavar='N', type=int, default=config['filter']['max-errors'], help=f'Max allowed errors on page ({config["filter"]["max-errors"]})')
     g.add_argument('--min-content-length', metavar='N', type=int, default=config['filter']['min-content-length'], help=f'Skip page if content-length less then N (try 5000 or higher)')
 
     g = parser.add_argument_group('Image detection options')

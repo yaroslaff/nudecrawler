@@ -13,7 +13,7 @@ fails = 5
 all = false
 expr = '(total_images>5 and new_nude_images>0) or total_video>0'
 total = 1
-max_errors = 5
+max-errors = 5
 min-content-length = 0
 
 [detect]
